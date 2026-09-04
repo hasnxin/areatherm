@@ -149,7 +149,8 @@ Thermal Comfort Score = ${result.scores.thermalComfortScore} / 100</pre>
     const result = s.lastSimulationResult;
     root.innerHTML = `
       <h1>Thermal Simulation</h1>
-      <p class="subtitle">Hourly physics-based energy balance for <b>${U.esc(s.location.label)}</b> — ${U.esc(s.seasonKey)} <span class="tag tag-demo">demo climate</span></p>
+      <p class="subtitle">Hourly physics-based energy balance for <b>${U.esc(s.location.label)}</b> — ${U.esc(s.seasonKey)}</p>
+      <div style="margin-bottom:14px;">${U.badge(s.climateSource)}</div>
       <div class="card">
         <div class="form-inline">
           <div class="form-row"><label>Time step</label>

@@ -5,6 +5,7 @@ window.APP = (function () {
 
   const ROUTES = {
     dashboard: window.UI.renderDashboard,
+    guided: window.UI.renderGuided,
     location: window.UI.renderLocation,
     designer: window.UI.renderDesigner,
     materials: window.UI.renderMaterials,

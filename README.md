@@ -54,10 +54,27 @@ Validation → Reports → Evaluator Summary → Settings** (left nav, top to bo
 |---|---|
 | Thermal physics (sol-air conduction, SHGC solar gain, infiltration, two-node RC thermal mass) | **Real model**, formulas in `ARCHITECTURE.md` §3, reproducible in-app via "Explain Calculation" |
 | Optimization (candidate generation + weighted multi-criteria scoring + sensitivity) | **Real**, not a black box — see `ARCHITECTURE.md` §4 |
-| Ladakh climate data (Leh/Nubra/Kargil/Drass) | **Demo / illustrative** — clearly labelled everywhere it appears, not field-measured |
+| Live weather for any of the 10 reference locations | **Real** — fetched client-side from [Open-Meteo](https://open-meteo.com) (no API key), a 7-day forecast averaged into a typical-day hourly curve, cached 7 days. See `app/js/weather-api.js`. |
+| Ladakh illustrative demo profiles (Leh/Kargil/Drass only) | **Demo / illustrative** — hand-built seasonal reference, clearly labelled, not field-measured |
+| "Annual" solar/sunshine figures shown for illustrative locations | Representative reference figures (e.g. Leh's ~2050 kWh/m²/yr is a known regional solar-resource stat) |
+| Same figures when using live weather | Extrapolated from the current 7-day forecast, **not annual climatology** — labelled as such wherever shown |
 | Material properties | **Engineering database reference values** — editable, labelled "verify for actual construction" |
 | Validation module error metrics (MAE/RMSE/MAPE/R²) | Real math, run against **user-provided or placeholder** measured rows — no field data exists yet |
 | PDF report | Browser print-to-PDF (production target: server-side rendering) |
+
+Every screen that shows climate-derived numbers displays a data-source badge
+(✓ green "Real — Open-Meteo" or ⚠ amber "Illustrative — demo dataset") so
+it's never ambiguous which kind of number you're looking at.
+
+## Two ways to use it
+
+- **Guided Setup** (left nav) — a 5-step wizard (Location → Shelter →
+  Materials → Comfort → Run) with sane presets, aimed at non-engineers.
+- **Advanced screens** (Location & Climate, Shelter Designer, Materials, …)
+  — full parameter control, unchanged from Guided Setup's underlying model.
+
+Guided Setup and the advanced screens share the same state — switching
+between them mid-project is safe.
 
 Nothing is fabricated as a measurement, a DRDO validation result, or an
 accuracy claim — see the "Scientific Integrity" note in `ARCHITECTURE.md` §8.

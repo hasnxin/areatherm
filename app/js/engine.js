@@ -109,7 +109,23 @@ window.APP_ENGINE = (function () {
   }
 
   // ---- Diurnal ambient temperature & solar irradiance -------------------
+  // Two drivers are supported: a synthetic sinusoidal/bell-curve model
+  // (used by the illustrative demo profiles, which only carry tMin/tMax/
+  // sunrise/sunset), and direct interpolation over a real 24-point hourly
+  // curve (used when live data was fetched — see weather-api.js). Neither
+  // touches the RC simulation loop below; they only supply its driving
+  // temperatures.
+  function interpHourly(hourly, field, hourDecimal) {
+    const h = ((hourDecimal % 24) + 24) % 24;
+    const i0 = Math.floor(h) % 24;
+    const i1 = (i0 + 1) % 24;
+    const frac = h - Math.floor(h);
+    const v0 = hourly[i0][field], v1 = hourly[i1][field];
+    return v0 + (v1 - v0) * frac;
+  }
+
   function ambientTempAt(season, hourDecimal) {
+    if (season.hourly) return interpHourly(season.hourly, "temp", hourDecimal);
     const mean = (season.tMin + season.tMax) / 2;
     const amp = (season.tMax - season.tMin) / 2;
     // Peak at 15:00, trough at 05:00 -> phase shift.
@@ -118,6 +134,7 @@ window.APP_ENGINE = (function () {
   }
 
   function solarIrradianceAt(season, hourDecimal) {
+    if (season.hourly) return Math.max(0, interpHourly(season.hourly, "solar", hourDecimal));
     const { sunrise, sunset, solarKwhDay } = season;
     if (hourDecimal <= sunrise || hourDecimal >= sunset) return 0;
     const dayLen = sunset - sunrise;
@@ -287,6 +304,7 @@ window.APP_ENGINE = (function () {
 
     const minIndoor = Math.min(...series.map(s => s.tIndoor));
     const maxIndoor = Math.max(...series.map(s => s.tIndoor));
+    const avgIndoor = round2(series.reduce((sum, s) => sum + s.tIndoor, 0) / series.length);
 
     return {
       geometry: geom, uValues: { wall: uWall, roof: uRoof, floor: uFloor },
@@ -302,7 +320,8 @@ window.APP_ENGINE = (function () {
       },
       comfort: {
         comfortHoursPerDay: round2(comfortHoursPerDay), dayComfortPct: round2(dayComfortPct),
-        nightComfortPct: round2(nightComfortPct), minIndoor: round2(minIndoor), maxIndoor: round2(maxIndoor)
+        nightComfortPct: round2(nightComfortPct), minIndoor: round2(minIndoor), maxIndoor: round2(maxIndoor),
+        avgIndoor: avgIndoor
       },
       scores: {
         comfortScore: round2(comfortScore), heatRetentionPct: round2(heatRetentionPct),

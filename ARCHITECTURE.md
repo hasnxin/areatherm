@@ -274,12 +274,16 @@ data/sample-ladakh-demo.json   exported demo project
 Phases 1–11 from the brief are delivered in this pass as a single running
 prototype rather than sequential milestones (feasible because there is no
 build/deploy step to gate on). Validation (Phase 9) and Reports (Phase 10)
-are included. Not implemented (explicitly out of scope for this pass,
-tracked for the production build): real authentication/RBAC persistence,
-live weather-API integration, 3D preview (2D top-down + elevation preview
-only), server-side PDF rendering (browser print-to-PDF is used instead),
-ML surrogate model (architecture documented in §9, not trained — no
-labelled field data exists yet to train or validate one).
+are included. Live weather-API integration is implemented client-side
+(Open-Meteo, `app/js/weather-api.js`) for 10 reference locations, with a
+Guided Setup wizard as the simplified entry point. Not implemented
+(explicitly out of scope for this pass, tracked for the production build):
+real authentication/RBAC persistence, historical/multi-year climatology
+(Open-Meteo's forecast endpoint only — no NASA POWER/ERA5/IMD archive
+integration yet), 3D preview (2D top-down + elevation preview only),
+server-side PDF rendering (browser print-to-PDF is used instead), ML
+surrogate model (architecture documented in §9, not trained — no labelled
+field data exists yet to train or validate one).
 
 ## 8. Assumptions register (also shown live in-app under Settings)
 

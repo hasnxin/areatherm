@@ -119,7 +119,15 @@ window.UI = window.UI || {};
         <h1 style="text-align:center;">Area-Specific Passive Shelter Thermal Performance &amp; Design Optimization Report</h1>
         <p style="text-align:center;color:var(--text-muted);">Generated: ${now.toLocaleString()} &nbsp;|&nbsp; Model version: ${CFG.MODEL_VERSION} &nbsp;|&nbsp; Simulation ID: ${simId}</p>
         <hr/>
-        <h3>1–2. Project &amp; Location</h3>
+        <div class="card" style="background:#fdf0d8;border-color:#f3ddac;">
+          <h3 style="color:#8a5a10;">Important Disclaimer</h3>
+          <p style="margin:0;">This report contains model-based predictions. Field validation against instrumented
+          shelter measurements is <b>required</b> before deployment.<br/>
+          Data source: <b>${s.climateSource ? U.esc(s.climateSource.label) : "Not set"}</b>
+          ${s.climateSource ? `(${U.esc(s.climateSource.period || (s.climateSource.type === "REAL" ? "live" : "illustrative"))})` : ""}<br/>
+          Validation status: <b>${s.validationDatasets.length ? s.validationDatasets.length + " dataset(s) compared — see Validation module" : "Not field-validated"}</b></p>
+        </div>
+        <h3 style="margin-top:16px;">1–2. Project &amp; Location</h3>
         <p>Project: <b>${U.esc(s.project.name)}</b><br/>
         Location: <b>${s.location ? U.esc(s.location.label) : "Not set"}</b>
         ${s.location ? `(Lat ${s.location.latitude}, Lon ${s.location.longitude}, Elevation ${s.location.elevationM} m)` : ""}
@@ -201,12 +209,15 @@ window.UI = window.UI || {};
     root.innerHTML = `
       <h1>Design Intelligence Summary</h1>
       <p class="subtitle">A 2–3 minute overview for an evaluator: the problem, the model, and the recommended design.</p>
+      ${s.climateSource ? `<div style="margin-bottom:14px;">${U.badge(s.climateSource)}</div>` : ""}
 
       <div class="grid grid-3" style="margin-bottom:16px;">
         <div class="card"><h3>Location</h3><div style="font-size:16px;font-weight:700;">${s.location ? U.esc(s.location.label) : "Not selected"}</div>
-          <div class="hint">${s.location ? `${s.location.annualSolarKwhM2Yr} kWh/m²/yr · ${s.location.avgSunshineHoursDay}h sunshine/day · ${s.location.avgCloudFreeDays} clear days/yr` : ""}</div></div>
+          <div class="hint">${s.location ? (s.climateSource && s.climateSource.type === "REAL"
+            ? `${STORE.currentSeason().solarKwhDay} kWh/m²/day · ${s.location.avgSunshineHoursDay}h daylight · ${STORE.currentSeason().cloudPct}% cloud cover (live avg, not annual climatology)`
+            : `${s.location.annualSolarKwhM2Yr} kWh/m²/yr · ${s.location.avgSunshineHoursDay}h sunshine/day · ${s.location.avgCloudFreeDays} clear days/yr`) : ""}</div></div>
         <div class="card"><h3>Climate Severity (${s.seasonKey || "—"})</h3><div style="font-size:16px;font-weight:700;">${STORE.currentSeason() ? STORE.currentSeason().tMin + "°C to " + STORE.currentSeason().tMax + "°C" : "—"}</div>
-          <div class="hint">High diurnal swing typical of Ladakh's cold high-altitude desert climate</div></div>
+          <div class="hint">${STORE.currentSeason() ? (STORE.currentSeason().tMax - STORE.currentSeason().tMin).toFixed(0) + "°C diurnal swing" : ""}</div></div>
         <div class="card"><h3>Validation Status</h3><div style="font-size:16px;font-weight:700;">${s.validationDatasets.length ? s.validationDatasets.length + " dataset(s) compared" : "Not yet validated"}</div>
           <div class="hint">Field validation required before deployment</div></div>
       </div>
@@ -241,10 +252,18 @@ window.UI = window.UI || {};
         <p>${opt ? `Design ${opt.recommended.label} — ${opt.recommended.params.orient}-facing, ${matName(opt.recommended.design.wall.materialId)} wall
         with ${opt.recommended.params.insul}mm insulation, ${matName(opt.recommended.params.glz)} glazing, thermal score
         <b>${opt.recommended.score.total.toFixed(0)}/100</b>.` : "Run Optimization to generate a recommended configuration."}</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button class="btn btn-accent btn-sm" id="viewDetailedBtn">View Detailed Analysis</button>
+          <button class="btn btn-sm" id="compareDesignsBtn">Compare Designs</button>
+          <button class="btn btn-sm" id="generateReportBtn">Generate Report</button>
+        </div>
       </div>
       ` : `<div class="card"><p class="subtitle">Run a simulation (and optimization) to populate this summary.</p></div>`}
     `;
     if (result) CH.scoreGauge(U.qs("#evalGauge", root), result.scores.thermalComfortScore);
+    U.on("#viewDetailedBtn", "click", () => window.APP.navigate("simulation"), root);
+    U.on("#compareDesignsBtn", "click", () => window.APP.navigate("optimization"), root);
+    U.on("#generateReportBtn", "click", () => window.APP.navigate("reports"), root);
   };
 
   // ---------------------------------------------------------------------

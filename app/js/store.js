@@ -60,14 +60,52 @@ window.APP_STORE = (function () {
   function reset() { state = freshState(); save(); return state; }
 
   function loadLadakhDemo(locationKey, seasonKey) {
+    loadIllustrativeDemo(locationKey, seasonKey);
+  }
+
+  function loadIllustrativeDemo(locationKey, seasonKey) {
     const loc = DATA.LOCATIONS[locationKey];
-    if (!loc) return;
+    if (!loc) return false;
     state.locationKey = locationKey;
     state.location = loc;
     state.seasonKey = seasonKey || "Winter";
-    state.climateSource = { type: "DEMO_ILLUSTRATIVE", label: "Demo / illustrative climate dataset" };
+    state.climateSource = {
+      type: "DEMO_ILLUSTRATIVE", apiSource: "DEMO",
+      label: "Demo / illustrative climate dataset",
+      period: "Representative seasonal reference — not measured"
+    };
     state.project.name = `${loc.label} — Passive Agricultural Shelter`;
     save();
+    return true;
+  }
+
+  // Fetches live weather from Open-Meteo for a predefined location and
+  // stores it in the same {seasons:{...}} shape the illustrative profiles
+  // use (as a single pseudo-season "Live"), so every screen that reads
+  // STORE.currentSeason() works unchanged regardless of data source.
+  async function loadRealClimate(locationId) {
+    const loc = DATA.predefinedLocationById(locationId);
+    if (!loc) throw new Error("Unknown location: " + locationId);
+    const climate = await window.APP_WEATHER.fetchOpenMeteo(loc.latitude, loc.longitude);
+    state.locationKey = loc.id;
+    state.location = {
+      key: loc.id, label: loc.name,
+      country: "India", state: loc.region, district: "",
+      latitude: loc.latitude, longitude: loc.longitude,
+      elevationM: climate.elevationM || loc.elevationM,
+      annualSolarKwhM2Yr: Math.round(climate.solarKwhDay * 365),
+      avgSunshineHoursDay: Math.max(0, Math.round((climate.sunset - climate.sunrise) * 10) / 10),
+      avgCloudFreeDays: Math.round(((100 - climate.cloudPct) / 100) * 365),
+      seasons: { Live: climate }
+    };
+    state.seasonKey = "Live";
+    state.climateSource = {
+      type: "REAL", apiSource: "OPEN_METEO",
+      label: "Open-Meteo (live)", period: climate.period, fetchedAt: climate.fetchedAt
+    };
+    state.project.name = `${loc.name} — Passive Shelter`;
+    save();
+    return state.location;
   }
 
   function currentSeason() {
@@ -104,7 +142,8 @@ window.APP_STORE = (function () {
   }
 
   return {
-    get, save, reset, loadLadakhDemo, currentSeason, updateDesign,
+    get, save, reset, loadLadakhDemo, loadIllustrativeDemo, loadRealClimate,
+    currentSeason, updateDesign,
     recordSimulation, recordOptimization, addValidationDataset, defaultDesign
   };
 })();

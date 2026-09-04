@@ -37,12 +37,34 @@ CREATE TABLE location (
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Curated site-selection shortcuts shown in the location picker (Guided
+-- Setup step 1 and the Location & Climate screen). Distinct from `location`
+-- above, which is a location actually attached to a project.
+CREATE TABLE predefined_location (
+  id                       BIGINT AUTO_INCREMENT PRIMARY KEY,
+  slug                     VARCHAR(50) NOT NULL UNIQUE,   -- 'leh', 'pune', ...
+  name                     VARCHAR(100) NOT NULL,
+  latitude                 DECIMAL(8,5) NOT NULL,
+  longitude                DECIMAL(8,5) NOT NULL,
+  elevation_m              INT,
+  region                   VARCHAR(100),
+  category                 VARCHAR(50),                    -- 'Cold desert', 'Gangetic plain', ...
+  has_illustrative_profile BOOLEAN NOT NULL DEFAULT FALSE   -- true only for the hand-built demo locations
+);
+
 -- One profile per location per data version (demo / user-provided / future
 -- live-API-sourced). is_illustrative=TRUE for shipped demo datasets.
 CREATE TABLE climate_profile (
   id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
   location_id        BIGINT NOT NULL REFERENCES location(id),
-  source             ENUM('DEMO_ILLUSTRATIVE','USER_PROVIDED','NASA_POWER','ERA5','IMD') NOT NULL,
+  source             ENUM('DEMO_ILLUSTRATIVE','USER_PROVIDED','OPEN_METEO','NASA_POWER','ERA5','IMD') NOT NULL,
+  -- data_source/api_source/data_validation_status/last_fetched are the
+  -- fields the frontend's data-source transparency badge reads from —
+  -- every screen showing climate-derived numbers displays this pair.
+  data_source        VARCHAR(50) NOT NULL DEFAULT 'DEMO',        -- 'DEMO' | 'OPEN_METEO' | 'USER_PROVIDED' | ...
+  api_source         VARCHAR(50),                                 -- e.g. 'open-meteo.com/v1/forecast'
+  data_validation_status ENUM('REAL','ILLUSTRATIVE') NOT NULL DEFAULT 'ILLUSTRATIVE',
+  last_fetched       DATETIME,                                    -- when a live fetch populated this row
   version            VARCHAR(50) NOT NULL,
   is_illustrative    BOOLEAN NOT NULL DEFAULT TRUE,
   ambient_temp_min_c DECIMAL(5,2),

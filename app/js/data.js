@@ -60,6 +60,23 @@ window.APP_DATA = (function () {
     }
   };
 
+  // ---- Predefined reference locations (for live Open-Meteo lookup) ----
+  // Coordinates/elevations are reference values for site selection, not
+  // survey-grade. Any of these can load LIVE weather (Open-Meteo) or, for
+  // the three that overlap LOCATIONS above, an illustrative demo profile.
+  const PREDEFINED_LOCATIONS = [
+    { id: "leh", name: "Leh, Ladakh", latitude: 34.1526, longitude: 77.5771, elevationM: 3500, region: "Ladakh (UT)", category: "Cold desert" },
+    { id: "kargil", name: "Kargil, Ladakh", latitude: 34.56, longitude: 76.11, elevationM: 2676, region: "Ladakh (UT)", category: "Cold desert" },
+    { id: "keylong", name: "Keylong, Himachal Pradesh", latitude: 32.22, longitude: 77.05, elevationM: 3170, region: "Himachal Pradesh", category: "High Himalaya" },
+    { id: "munsiyari", name: "Munsiyari, Uttarakhand", latitude: 30.05, longitude: 80.20, elevationM: 2298, region: "Uttarakhand", category: "High Himalaya" },
+    { id: "dras", name: "Drass, Ladakh", latitude: 34.42, longitude: 75.57, elevationM: 3280, region: "Ladakh (UT)", category: "Cold desert" },
+    { id: "srinagar", name: "Srinagar, J&K", latitude: 34.08, longitude: 75.34, elevationM: 1730, region: "Jammu & Kashmir (UT)", category: "Temperate valley" },
+    { id: "pune", name: "Pune, Maharashtra", latitude: 18.52, longitude: 73.85, elevationM: 625, region: "Maharashtra", category: "Tropical plateau" },
+    { id: "bareilly", name: "Bareilly, Uttar Pradesh", latitude: 28.37, longitude: 79.43, elevationM: 168, region: "Uttar Pradesh", category: "Gangetic plain" },
+    { id: "nagpur", name: "Nagpur, Maharashtra", latitude: 21.14, longitude: 79.08, elevationM: 310, region: "Maharashtra", category: "Tropical plain" },
+    { id: "shimla", name: "Shimla, Himachal Pradesh", latitude: 31.77, longitude: 77.10, elevationM: 2159, region: "Himachal Pradesh", category: "Mid Himalaya" }
+  ];
+
   // ---- Material library ---------------------------------------------
   // All values are engineering-database reference values (typical/handbook
   // ranges) — NOT independently lab-tested for this project. Editable.
@@ -124,5 +141,12 @@ window.APP_DATA = (function () {
     return MATERIALS.find(m => m.id === id);
   }
 
-  return { LOCATIONS, MATERIALS, COMFORT_PROFILES, materialsByCategory, materialById };
+  function predefinedLocationById(id) {
+    return PREDEFINED_LOCATIONS.find(l => l.id === id);
+  }
+
+  return {
+    LOCATIONS, PREDEFINED_LOCATIONS, MATERIALS, COMFORT_PROFILES,
+    materialsByCategory, materialById, predefinedLocationById
+  };
 })();
