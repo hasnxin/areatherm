@@ -1,0 +1,2411 @@
+<title>AreaTherm</title>
+<style>
+:root{
+  --navy-900:#0b1a2b; --navy-800:#122840; --navy-700:#1a3a5c;
+  --accent:#1f8a9e; --accent-bright:#2fb8cf;
+  --bg:#f4f7f9; --panel:#ffffff; --border:#dfe6ec;
+  --text:#152233; --text-muted:#5b6b7c; --text-faint:#8b98a6;
+  --good:#1f9d55; --warn:#d98a12; --bad:#c93b3b;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px;}
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; cursor:pointer;}
+
+.app-shell{min-height:100vh;}
+
+/* Sidebar */
+.sidebar{
+  width:230px; background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
+  color:#dce8f0; display:flex; flex-direction:column; flex-shrink:0; padding:18px 0;
+  position:fixed; top:0; left:0; height:100vh; z-index:10;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:0 18px 18px; border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+.brand-name{font-weight:700; font-size:15px; color:#fff;}
+.brand-sub{font-size:10.5px; color:#8ea9bc; letter-spacing:.03em;}
+.nav{display:flex; flex-direction:column; padding:14px 10px; gap:2px; flex:1; overflow-y:auto;}
+.nav a{padding:9px 12px; border-radius:6px; font-size:13px; color:#b9cad8; transition:background .12s;}
+.nav a:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav a.active{background:var(--accent); color:#fff; font-weight:600;}
+.sidebar-footer{padding:14px 18px 0; border-top:1px solid rgba(255,255,255,.08); margin-top:8px;}
+.mode-toggle{display:flex; background:rgba(255,255,255,.08); border-radius:6px; padding:2px; margin-bottom:10px;}
+.mode-btn{flex:1; background:transparent; border:none; color:#b9cad8; font-size:11.5px; padding:6px 0; border-radius:5px;}
+.mode-btn.active{background:var(--accent); color:#fff;}
+.version-tag{font-family:var(--mono); font-size:10px; color:#63798c;}
+
+/* Main content */
+.content{margin-left:230px; min-width:0; display:flex; flex-direction:column; min-height:100vh;}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:12px 24px; background:var(--panel); border-bottom:1px solid var(--border);}
+.topbar-project{display:flex; flex-direction:column;}
+.topbar-label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint);}
+.topbar-value{font-weight:600; font-size:14px;}
+.btn{border:1px solid var(--border); background:var(--panel); padding:8px 14px; border-radius:6px; font-size:12.5px; font-weight:600; color:var(--text);}
+.btn:hover{border-color:var(--accent); color:var(--accent);}
+.btn-accent{background:var(--accent); color:#fff; border-color:var(--accent);}
+.btn-accent:hover{background:var(--accent-bright); color:#fff;}
+.btn-sm{padding:5px 10px; font-size:11.5px;}
+
+.view{padding:22px 26px 60px; max-width:1320px;}
+
+/* Typography helpers */
+h1{font-size:21px; margin:0 0 4px;}
+h2{font-size:16px; margin:0 0 12px;}
+h3{font-size:13.5px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.03em; color:var(--text-muted);}
+.subtitle{color:var(--text-muted); font-size:13px; margin-bottom:20px;}
+.tag{display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:2px 8px; border-radius:999px; font-weight:700;}
+.tag-demo{background:#fdf0d8; color:#8a5a10;}
+.tag-model{background:#dff1f5; color:#166273;}
+.tag-input{background:#e6f4ea; color:#1c7a3d;}
+.tag-field{background:#f0e6f9; color:#6b2fa3;}
+
+/* Grid / cards */
+.grid{display:grid; gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media (max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+
+.card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px;}
+.card-tight{padding:12px 14px;}
+.metric-card .metric-label{font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;}
+.metric-card .metric-value{font-size:26px; font-weight:700; font-family:var(--mono);}
+.metric-card .metric-sub{font-size:11.5px; color:var(--text-faint); margin-top:4px;}
+
+/* Forms */
+.form-row{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+.form-row label{font-size:11.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.02em;}
+.form-row input, .form-row select, .form-row textarea{
+  padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:#fff; color:var(--text); font-family:inherit;
+}
+.form-row .hint{font-size:11px; color:var(--text-faint); font-weight:400; text-transform:none;}
+.form-inline{display:flex; gap:12px; flex-wrap:wrap;}
+.form-inline .form-row{flex:1; min-width:140px;}
+fieldset{border:1px solid var(--border); border-radius:8px; padding:14px; margin:0 0 16px;}
+legend{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--accent); padding:0 6px;}
+
+/* Tables */
+table{width:100%; border-collapse:collapse; font-size:12.5px;}
+th,td{padding:8px 10px; border-bottom:1px solid var(--border); text-align:left;}
+th{font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--text-muted); background:#f8fafb;}
+tr.highlight-recommended{background:#e9f8ee;}
+td.num{font-family:var(--mono); text-align:right;}
+.table-wrap{overflow-x:auto;}
+
+/* Charts */
+.chart-svg{width:100%; height:auto; display:block;}
+.chart-grid{stroke:#e7edf1; stroke-width:1;}
+.chart-axis{stroke:#c4d0d9; stroke-width:1;}
+.chart-tick{font-size:9.5px; fill:var(--text-faint); font-family:var(--mono);}
+.chart-axis-label{font-size:10px; fill:var(--text-muted);}
+.chart-line{fill:none; stroke-width:2;}
+.chart-comfort-band{fill:#d7f3e3; opacity:.6;}
+.chart-legend{display:flex; gap:14px; margin-top:8px; flex-wrap:wrap;}
+.chart-legend-item{font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px;}
+.chart-legend-item i{width:10px; height:10px; border-radius:2px; display:inline-block;}
+.chart-bar-pos{fill:var(--good);} .chart-bar-neg{fill:var(--bad);}
+.chart-ideal-line{stroke:#c4d0d9; stroke-dasharray:4 3;}
+.chart-point{fill:var(--accent); opacity:.75;}
+
+.gauge-svg{width:140px; height:140px;}
+.gauge-track{stroke:#e7edf1;}
+.gauge-score{font-size:30px; font-weight:800; font-family:var(--mono); fill:var(--text);}
+.gauge-max{font-size:11px; fill:var(--text-faint);}
+.gauge-sublabel{text-align:center; font-size:11px; color:var(--text-muted); margin-top:4px;}
+
+/* Heat flow diagram */
+.heatflow{display:flex; flex-direction:column; align-items:stretch; gap:2px; max-width:640px;}
+.heatflow-row{display:grid; grid-template-columns:170px 1fr 140px; align-items:center; gap:10px;}
+.heatflow-label{font-size:11px; font-weight:700; letter-spacing:.02em; color:var(--text-muted);}
+.heatflow-bar-track{background:#eef2f5; border-radius:4px; height:16px; overflow:hidden;}
+.heatflow-bar{height:100%; border-radius:4px;}
+.heatflow-bar.pos{background:var(--good);} .heatflow-bar.neg{background:var(--bad);}
+.heatflow-value{font-family:var(--mono); font-size:12px; text-align:right;}
+.heatflow-value.pos{color:var(--good);} .heatflow-value.neg{color:var(--bad);}
+.heatflow-arrow{text-align:left; padding-left:6px; color:var(--text-faint); font-size:12px;}
+.heatflow-net{border-top:1px dashed var(--border); padding-top:6px; margin-top:4px;}
+
+/* Score badges / checklist */
+.score-pill{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-weight:700;}
+.checklist{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;}
+.checklist li{font-size:13px;}
+.checklist li::before{content:"✓ "; color:var(--good); font-weight:700;}
+
+/* Recommended design panel */
+.recommend-panel{border:1.5px solid var(--good); background:#f3fbf5; border-radius:10px; padding:18px 20px;}
+.recommend-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:10px;}
+.recommend-item .k{font-size:10.5px; text-transform:uppercase; color:var(--text-muted); letter-spacing:.03em;}
+.recommend-item .v{font-weight:700; font-size:14px;}
+
+/* Explain link */
+.explain-link{font-size:11px; color:var(--accent); font-weight:600; border:1px dashed var(--accent); border-radius:5px; padding:2px 8px; display:inline-block; margin-top:6px;}
+.explain-link:hover{background:var(--accent); color:#fff;}
+
+/* Modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(10,20,30,.5); display:flex; align-items:center; justify-content:center; z-index:100;}
+.modal-overlay.hidden{display:none;}
+.modal{background:#fff; border-radius:10px; width:640px; max-width:92vw; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-header{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border);}
+.modal-close{background:none; border:none; font-size:16px; color:var(--text-muted);}
+.modal-body{padding:16px 20px; overflow-y:auto; font-size:13px; line-height:1.6;}
+.modal-body pre{background:#f4f7f9; padding:12px; border-radius:6px; font-family:var(--mono); font-size:12.5px; overflow-x:auto;}
+
+/* Landing hero */
+.hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700)); color:#fff; border-radius:14px; padding:36px 40px; margin-bottom:22px;}
+.hero h1{font-size:28px; color:#fff; margin-bottom:8px;}
+.hero p{color:#c3d6e2; max-width:640px; font-size:14px; line-height:1.6;}
+.hero .flow{display:flex; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap; font-family:var(--mono); font-size:12px;}
+.hero .flow span.step{background:rgba(255,255,255,.1); padding:6px 12px; border-radius:6px; color:#e7f1f7;}
+.hero .flow span.arrow{color:#6f93aa;}
+.hero .cta-row{margin-top:22px; display:flex; gap:10px;}
+
+.workflow-compare{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:18px 0;}
+.workflow-col{border-radius:10px; padding:16px 18px;}
+.workflow-col.old{background:#fbeceb; border:1px solid #f1c6c2;}
+.workflow-col.new{background:#eaf7ee; border:1px solid #bfe6cb;}
+.workflow-col .step{padding:6px 0; font-size:12.5px; font-weight:600;}
+.workflow-col .arrow-down{text-align:center; color:var(--text-faint); font-size:12px;}
+
+.assumption-list{list-style:none; margin:0; padding:0;}
+.assumption-list li{padding:8px 0; border-bottom:1px dashed var(--border); font-size:13px;}
+.assumption-list li:last-child{border-bottom:none;}
+
+.badge-source{font-size:10.5px; padding:2px 7px; border-radius:5px; font-weight:700; text-transform:uppercase;}
+
+@media print{
+  .sidebar, .topbar, .btn, .explain-link{display:none !important;}
+  .content{width:100%; margin-left:0;}
+  .view{padding:0; max-width:100%;}
+  body{background:#fff;}
+}
+</style>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">AT</div>
+      <div>
+        <div class="brand-name" id="brandName">AreaTherm</div>
+        <div class="brand-sub">Passive Shelter Design</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav">
+      <a href="#/dashboard" data-route="dashboard">Dashboard</a>
+      <a href="#/location" data-route="location">Location &amp; Climate</a>
+      <a href="#/designer" data-route="designer">Shelter Designer</a>
+      <a href="#/materials" data-route="materials">Materials</a>
+      <a href="#/simulation" data-route="simulation">Thermal Simulation</a>
+      <a href="#/optimization" data-route="optimization">Optimization</a>
+      <a href="#/whatif" data-route="whatif">What-If Analysis</a>
+      <a href="#/validation" data-route="validation">Validation</a>
+      <a href="#/reports" data-route="reports">Reports</a>
+      <a href="#/evaluator" data-route="evaluator">Evaluator Summary</a>
+      <a href="#/settings" data-route="settings">Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="mode-toggle">
+        <button id="modeSimple" class="mode-btn active">Simple</button>
+        <button id="modeAdvanced" class="mode-btn">Advanced</button>
+      </div>
+      <div class="version-tag">thermal-engine v1.0.0</div>
+    </div>
+  </aside>
+  <main class="content">
+    <header class="topbar">
+      <div class="topbar-project">
+        <span class="topbar-label">Project</span>
+        <span class="topbar-value" id="projectName">Untitled Project</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="runLadakhDemoBtn" class="btn btn-accent">▶ Run Ladakh Demo</button>
+      </div>
+    </header>
+    <div class="view" id="viewRoot"><!-- rendered by app.js --></div>
+  </main>
+</div>
+
+<div id="explainModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="explainTitle">Explain Calculation</h3>
+      <button id="explainClose" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="explainBody"></div>
+  </div>
+</div>
+
+<script>
+/* AreaTherm — small shared UI helpers. */
+window.U = {
+  n(x, d) { d = d == null ? 1 : d; return Number.isFinite(x) ? x.toFixed(d) : "—"; },
+  qs(sel, root) { return (root || document).querySelector(sel); },
+  qsa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); },
+  on(sel, evt, fn, root) { const e = this.qs(sel, root); if (e) e.addEventListener(evt, fn); },
+  esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+};
+</script>
+
+<script>
+/* AreaTherm — global config. Change APP_NAME/APP_SUBTITLE to rebrand. */
+window.APP_CONFIG = {
+  APP_NAME: "AreaTherm",
+  APP_SUBTITLE: "Area-Specific Passive Shelter Design & Thermal Comfort Prediction Platform",
+  TAGLINE: "Design the shelter for the climate — not the climate for the shelter.",
+  MODEL_VERSION: "thermal-engine v1.0.0",
+  OPTIMIZATION_VERSION: "optimizer v1.0.0",
+
+  DEFAULT_WEIGHTS: {
+    comfort: 0.40,
+    retention: 0.25,
+    solar: 0.15,
+    energy: 0.10,
+    cost: 0.10
+  },
+
+  PHYSICS: {
+    AIR_DENSITY_KG_M3: 1.2,
+    AIR_CP_J_KGK: 1005,
+    OUTSIDE_FILM_COEFF_W_M2K: 23,
+    MASS_FILM_COEFF_W_M2K: 8,
+    FURNISHING_CAPACITANCE_FACTOR: 1.0
+  },
+
+  ORIENTATION_FACTORS: {
+    SOUTH: 1.00, SE: 0.85, SW: 0.85,
+    EAST: 0.55, WEST: 0.55,
+    NE: 0.30, NW: 0.30,
+    NORTH: 0.15
+  },
+
+  UNITS: {
+    temp: "°C", energy: "kWh", power: "W", area: "m²", volume: "m³",
+    length: "m", thickness: "mm", irradiance: "W/m²", solarAnnual: "kWh/m²/yr",
+    wind: "m/s", cost: "₹"
+  }
+};
+</script>
+
+<script>
+/* AreaTherm — demo climate datasets, material library, comfort profiles.
+   All climate figures below are DEMO / ILLUSTRATIVE datasets for prototype
+   demonstration only — NOT field-measured or DRDO-validated data. */
+
+window.APP_DATA = (function () {
+
+  // ---- Ladakh demo climate profiles --------------------------------
+  const LOCATIONS = {
+    leh: {
+      key: "leh", label: "Leh, Ladakh",
+      country: "India", state: "Ladakh (UT)", district: "Leh",
+      latitude: 34.1526, longitude: 77.5771, elevationM: 3500,
+      annualSolarKwhM2Yr: 2050, avgSunshineHoursDay: 7.9, avgCloudFreeDays: 300,
+      seasons: {
+        Winter: { tMin: -15, tMax: -1, solarKwhDay: 3.6, sunrise: 7.3, sunset: 17.0, windMs: 2.1, rhPct: 38, cloudPct: 12 },
+        Spring: { tMin: -4, tMax: 12, solarKwhDay: 5.6, sunrise: 6.0, sunset: 18.5, windMs: 2.8, rhPct: 32, cloudPct: 15 },
+        Summer: { tMin: 10, tMax: 27, solarKwhDay: 6.4, sunrise: 5.3, sunset: 19.6, windMs: 2.4, rhPct: 35, cloudPct: 18 },
+        Autumn: { tMin: -6, tMax: 15, solarKwhDay: 4.9, sunrise: 6.2, sunset: 18.0, windMs: 2.0, rhPct: 30, cloudPct: 10 }
+      }
+    },
+    nubra: {
+      key: "nubra", label: "Nubra Valley, Ladakh",
+      country: "India", state: "Ladakh (UT)", district: "Leh (Nubra)",
+      latitude: 34.6803, longitude: 77.5654, elevationM: 3050,
+      annualSolarKwhM2Yr: 2020, avgSunshineHoursDay: 8.0, avgCloudFreeDays: 305,
+      seasons: {
+        Winter: { tMin: -12, tMax: 2, solarKwhDay: 3.7, sunrise: 7.2, sunset: 17.1, windMs: 2.3, rhPct: 34, cloudPct: 10 },
+        Spring: { tMin: -2, tMax: 14, solarKwhDay: 5.7, sunrise: 6.0, sunset: 18.6, windMs: 2.9, rhPct: 28, cloudPct: 13 },
+        Summer: { tMin: 13, tMax: 29, solarKwhDay: 6.5, sunrise: 5.2, sunset: 19.7, windMs: 2.5, rhPct: 30, cloudPct: 16 },
+        Autumn: { tMin: -4, tMax: 17, solarKwhDay: 5.0, sunrise: 6.1, sunset: 18.1, windMs: 2.1, rhPct: 27, cloudPct: 9 }
+      }
+    },
+    kargil: {
+      key: "kargil", label: "Kargil, Ladakh",
+      country: "India", state: "Ladakh (UT)", district: "Kargil",
+      latitude: 34.5539, longitude: 76.1349, elevationM: 2676,
+      annualSolarKwhM2Yr: 1950, avgSunshineHoursDay: 7.6, avgCloudFreeDays: 280,
+      seasons: {
+        Winter: { tMin: -10, tMax: 2, solarKwhDay: 3.3, sunrise: 7.4, sunset: 17.2, windMs: 1.9, rhPct: 42, cloudPct: 18 },
+        Spring: { tMin: -1, tMax: 15, solarKwhDay: 5.3, sunrise: 6.1, sunset: 18.6, windMs: 2.4, rhPct: 36, cloudPct: 20 },
+        Summer: { tMin: 14, tMax: 30, solarKwhDay: 6.1, sunrise: 5.4, sunset: 19.7, windMs: 2.0, rhPct: 38, cloudPct: 22 },
+        Autumn: { tMin: -3, tMax: 17, solarKwhDay: 4.6, sunrise: 6.3, sunset: 18.1, windMs: 1.8, rhPct: 33, cloudPct: 16 }
+      }
+    },
+    dras: {
+      key: "dras", label: "Drass, Ladakh",
+      country: "India", state: "Ladakh (UT)", district: "Kargil (Drass)",
+      latitude: 34.4362, longitude: 75.7622, elevationM: 3230,
+      annualSolarKwhM2Yr: 1900, avgSunshineHoursDay: 7.2, avgCloudFreeDays: 270,
+      seasons: {
+        Winter: { tMin: -25, tMax: -8, solarKwhDay: 3.1, sunrise: 7.5, sunset: 17.1, windMs: 1.6, rhPct: 40, cloudPct: 16 },
+        Spring: { tMin: -8, tMax: 10, solarKwhDay: 5.0, sunrise: 6.1, sunset: 18.5, windMs: 2.1, rhPct: 34, cloudPct: 18 },
+        Summer: { tMin: 8, tMax: 24, solarKwhDay: 5.9, sunrise: 5.4, sunset: 19.6, windMs: 1.8, rhPct: 37, cloudPct: 20 },
+        Autumn: { tMin: -9, tMax: 13, solarKwhDay: 4.4, sunrise: 6.3, sunset: 18.0, windMs: 1.5, rhPct: 32, cloudPct: 14 }
+      }
+    }
+  };
+
+  // ---- Material library ---------------------------------------------
+  const MATERIALS = [
+    { id: "wall_concrete", category: "WALL", name: "Concrete (dense)", density: 2400, k: 1.40, cp: 880, defaultThicknessMm: 200, absorptivity: 0.65, reflectivity: 0.35, emissivity: 0.90, costPerM2: 1400, sustainability: "LOW" },
+    { id: "wall_brick", category: "WALL", name: "Fired Brick", density: 1700, k: 0.72, cp: 840, defaultThicknessMm: 230, absorptivity: 0.60, reflectivity: 0.40, emissivity: 0.90, costPerM2: 1100, sustainability: "MEDIUM" },
+    { id: "wall_stone", category: "WALL", name: "Local Stone Masonry", density: 2600, k: 1.70, cp: 850, defaultThicknessMm: 400, absorptivity: 0.55, reflectivity: 0.45, emissivity: 0.90, costPerM2: 1600, sustainability: "MEDIUM" },
+    { id: "wall_adobe", category: "WALL", name: "Adobe", density: 1600, k: 0.55, cp: 900, defaultThicknessMm: 300, absorptivity: 0.60, reflectivity: 0.40, emissivity: 0.90, costPerM2: 650, sustainability: "HIGH" },
+    { id: "wall_rammed_earth", category: "WALL", name: "Rammed Earth", density: 2000, k: 0.60, cp: 900, defaultThicknessMm: 350, absorptivity: 0.60, reflectivity: 0.40, emissivity: 0.90, costPerM2: 900, sustainability: "HIGH" },
+    { id: "wall_mud_block", category: "WALL", name: "Sun-dried Mud Block", density: 1500, k: 0.46, cp: 900, defaultThicknessMm: 300, absorptivity: 0.62, reflectivity: 0.38, emissivity: 0.90, costPerM2: 500, sustainability: "HIGH" },
+    { id: "wall_aac", category: "WALL", name: "AAC Block", density: 550, k: 0.16, cp: 1050, defaultThicknessMm: 200, absorptivity: 0.55, reflectivity: 0.45, emissivity: 0.90, costPerM2: 950, sustainability: "MEDIUM" },
+    { id: "wall_insulated_panel", category: "WALL", name: "Insulated Sandwich Panel (PUF core)", density: 45, k: 0.023, cp: 1400, defaultThicknessMm: 100, absorptivity: 0.45, reflectivity: 0.55, emissivity: 0.85, costPerM2: 1900, sustainability: "MEDIUM" },
+    { id: "wall_composite", category: "WALL", name: "Composite Insulated Wall (brick + EPS + brick)", density: 900, k: 0.09, cp: 950, defaultThicknessMm: 280, absorptivity: 0.55, reflectivity: 0.45, emissivity: 0.90, costPerM2: 2100, sustainability: "MEDIUM" },
+
+    { id: "roof_rcc", category: "ROOF", name: "RCC Slab", density: 2400, k: 1.58, cp: 880, defaultThicknessMm: 150, absorptivity: 0.65, reflectivity: 0.35, emissivity: 0.90, costPerM2: 1500, sustainability: "LOW" },
+    { id: "roof_metal", category: "ROOF", name: "Galvanized Metal Sheet", density: 7850, k: 50, cp: 490, defaultThicknessMm: 1, absorptivity: 0.55, reflectivity: 0.45, emissivity: 0.28, costPerM2: 700, sustainability: "MEDIUM" },
+    { id: "roof_insulated_metal", category: "ROOF", name: "Insulated Metal Roof Panel (PUF core)", density: 40, k: 0.022, cp: 1400, defaultThicknessMm: 80, absorptivity: 0.45, reflectivity: 0.55, emissivity: 0.30, costPerM2: 1700, sustainability: "MEDIUM" },
+    { id: "roof_composite", category: "ROOF", name: "Composite Roof (metal + rockwool + ply)", density: 300, k: 0.05, cp: 1000, defaultThicknessMm: 120, absorptivity: 0.50, reflectivity: 0.50, emissivity: 0.75, costPerM2: 1600, sustainability: "MEDIUM" },
+    { id: "roof_earth", category: "ROOF", name: "Traditional Earth Roof", density: 1700, k: 0.80, cp: 900, defaultThicknessMm: 250, absorptivity: 0.65, reflectivity: 0.35, emissivity: 0.90, costPerM2: 850, sustainability: "HIGH" },
+
+    { id: "ins_eps", category: "INSULATION", name: "EPS", density: 20, k: 0.035, cp: 1450, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 500, sustainability: "LOW" },
+    { id: "ins_xps", category: "INSULATION", name: "XPS", density: 35, k: 0.030, cp: 1450, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 650, sustainability: "LOW" },
+    { id: "ins_rockwool", category: "INSULATION", name: "Rock Wool", density: 100, k: 0.040, cp: 840, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 600, sustainability: "MEDIUM" },
+    { id: "ins_glasswool", category: "INSULATION", name: "Glass Wool", density: 24, k: 0.038, cp: 840, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 550, sustainability: "MEDIUM" },
+    { id: "ins_puf", category: "INSULATION", name: "PUF (Polyurethane Foam)", density: 32, k: 0.023, cp: 1400, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 750, sustainability: "LOW" },
+    { id: "ins_sheepwool", category: "INSULATION", name: "Sheep Wool", density: 25, k: 0.038, cp: 1700, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 900, sustainability: "HIGH" },
+    { id: "ins_natural_fibre", category: "INSULATION", name: "Natural Fibre Insulation (local wool/felt)", density: 60, k: 0.045, cp: 1600, defaultThicknessMm: 75, absorptivity: 0.4, reflectivity: 0.6, emissivity: 0.6, costPerM2: 700, sustainability: "HIGH" },
+
+    { id: "mass_stone", category: "THERMAL_MASS", name: "Stone (basalt/granite)", density: 2700, k: 2.2, cp: 850, absorptivity: 0.6, reflectivity: 0.4, emissivity: 0.9, costPerKg: 6, sustainability: "MEDIUM" },
+    { id: "mass_concrete", category: "THERMAL_MASS", name: "Concrete Mass", density: 2400, k: 1.4, cp: 880, absorptivity: 0.6, reflectivity: 0.4, emissivity: 0.9, costPerKg: 5, sustainability: "LOW" },
+    { id: "mass_water", category: "THERMAL_MASS", name: "Water Drums", density: 1000, k: 0.6, cp: 4186, absorptivity: 0.9, reflectivity: 0.1, emissivity: 0.95, costPerKg: 0.05, sustainability: "HIGH" },
+    { id: "mass_pcm", category: "THERMAL_MASS", name: "Phase Change Material (paraffin-based, ~24°C melt)", density: 900, k: 0.2, cp: 2100, pcmMeltC: 24, pcmLatentJKg: 190000, absorptivity: 0.5, reflectivity: 0.5, emissivity: 0.9, costPerKg: 350, sustainability: "MEDIUM" },
+    { id: "mass_earth", category: "THERMAL_MASS", name: "Compacted Earth Mass", density: 1900, k: 1.0, cp: 900, absorptivity: 0.6, reflectivity: 0.4, emissivity: 0.9, costPerKg: 1, sustainability: "HIGH" },
+    { id: "mass_composite", category: "THERMAL_MASS", name: "Composite Storage (stone + PCM)", density: 1800, k: 1.1, cp: 1400, pcmMeltC: 24, pcmLatentJKg: 90000, absorptivity: 0.55, reflectivity: 0.45, emissivity: 0.9, costPerKg: 120, sustainability: "MEDIUM" },
+
+    { id: "glaze_single", category: "WINDOW", name: "Single Glazing", uValue: 5.8, shgc: 0.85, costPerM2: 1200, sustainability: "LOW" },
+    { id: "glaze_double", category: "WINDOW", name: "Double Glazing", uValue: 2.8, shgc: 0.70, costPerM2: 3200, sustainability: "MEDIUM" },
+    { id: "glaze_triple", category: "WINDOW", name: "Triple Glazing", uValue: 1.6, shgc: 0.58, costPerM2: 5200, sustainability: "MEDIUM" },
+    { id: "glaze_lowe", category: "WINDOW", name: "Low-E Double Glazing", uValue: 1.8, shgc: 0.62, costPerM2: 4200, sustainability: "HIGH" }
+  ];
+
+  const COMFORT_PROFILES = [
+    { id: "human", label: "Human Occupancy", min: 18, max: 27 },
+    { id: "agri_produce", label: "Agricultural Produce Storage", min: 4, max: 12 },
+    { id: "livestock", label: "Livestock Shelter", min: 8, max: 20 },
+    { id: "seed_storage", label: "Seed Storage", min: 5, max: 15 },
+    { id: "nursery", label: "Plant Nursery / Greenhouse", min: 15, max: 28 },
+    { id: "equipment", label: "Equipment / Electronics Shelter", min: 5, max: 35 },
+    { id: "custom", label: "Custom", min: 18, max: 27 }
+  ];
+
+  function materialsByCategory(cat) {
+    return MATERIALS.filter(m => m.category === cat);
+  }
+  function materialById(id) {
+    return MATERIALS.find(m => m.id === id);
+  }
+
+  return { LOCATIONS, MATERIALS, COMFORT_PROFILES, materialsByCategory, materialById };
+})();
+</script>
+
+<script>
+/* AreaTherm — Thermal Engine + Optimization Engine + Validation Stats.
+   Pure functions only (no DOM access) so this module ports directly onto
+   a Spring Boot `thermal` / `optimization` service. */
+
+window.APP_ENGINE = (function () {
+  const CFG = window.APP_CONFIG;
+  const DATA = window.APP_DATA;
+  const AIR_RHO = CFG.PHYSICS.AIR_DENSITY_KG_M3;
+  const AIR_CP = CFG.PHYSICS.AIR_CP_J_KGK;
+  const H_O = CFG.PHYSICS.OUTSIDE_FILM_COEFF_W_M2K;
+  const H_MASS = CFG.PHYSICS.MASS_FILM_COEFF_W_M2K;
+  const RSI_WALL = 0.13, RSI_ROOF = 0.10, R_GROUND = 0.50;
+
+  const ORIENT_OFFSET = { SOUTH: 0, SE: 45, EAST: 90, NE: 135, NORTH: 180, NW: 135, WEST: 90, SW: 45 };
+  const FACTOR_TABLE = [ [0, 1.00], [45, 0.85], [90, 0.55], [135, 0.30], [180, 0.15] ];
+
+  function orientationFactorFromAngle(angle0to180) {
+    const a = Math.max(0, Math.min(180, angle0to180));
+    for (let i = 0; i < FACTOR_TABLE.length - 1; i++) {
+      const [a0, f0] = FACTOR_TABLE[i], [a1, f1] = FACTOR_TABLE[i + 1];
+      if (a >= a0 && a <= a1) {
+        const t = (a - a0) / (a1 - a0);
+        return f0 + t * (f1 - f0);
+      }
+    }
+    return 0.15;
+  }
+
+  function frontAzimuthOf(design) {
+    if (design.orientation === "CUSTOM") return ((design.azimuthDeg % 360) + 360) % 360;
+    return ORIENT_OFFSET[design.orientation] ?? 0;
+  }
+
+  function faceFactor(frontAzimuth, relativeOffsetDeg) {
+    const abs = ((frontAzimuth + relativeOffsetDeg) % 360 + 360) % 360;
+    const angle = abs <= 180 ? abs : 360 - abs;
+    return orientationFactorFromAngle(angle);
+  }
+
+  function computeGeometry(design) {
+    let L = design.length || 6, W = design.width || 4, H = design.height || 3;
+    let floorArea, roofArea, perimeter;
+    if (design.shape === "CIRCULAR" || design.shape === "DOME" || design.shape === "SEMI_CIRCULAR") {
+      const d = design.diameter || Math.max(L, W) || 5;
+      const r = d / 2;
+      floorArea = Math.PI * r * r;
+      perimeter = Math.PI * d;
+      roofArea = (design.shape === "DOME") ? 2 * Math.PI * r * r : floorArea;
+      L = W = d;
+    } else {
+      if (design.shape === "SQUARE") { W = L; }
+      floorArea = L * W;
+      perimeter = 2 * (L + W);
+      roofArea = L * W;
+    }
+    const volume = floorArea * H;
+    const frontAzimuth = frontAzimuthOf(design);
+    let faces;
+    if (design.shape === "CIRCULAR" || design.shape === "DOME" || design.shape === "SEMI_CIRCULAR") {
+      const wallArea = perimeter * H;
+      faces = [{ name: "CURVED_WALL", areaM2: wallArea, factor: faceFactor(frontAzimuth, 0) }];
+    } else {
+      faces = [
+        { name: "FRONT", areaM2: L * H, factor: faceFactor(frontAzimuth, 0) },
+        { name: "BACK", areaM2: L * H, factor: faceFactor(frontAzimuth, 180) },
+        { name: "LEFT", areaM2: W * H, factor: faceFactor(frontAzimuth, -90) },
+        { name: "RIGHT", areaM2: W * H, factor: faceFactor(frontAzimuth, 90) }
+      ];
+    }
+    const wallArea = faces.reduce((s, f) => s + f.areaM2, 0);
+    return { L, W, H, floorArea, roofArea, wallArea, volume, faces, frontAzimuth };
+  }
+
+  function layerResistance(materialId, thicknessMm) {
+    const m = DATA.materialById(materialId);
+    if (!m || !m.k) return 0;
+    return (thicknessMm / 1000) / m.k;
+  }
+
+  function wallUValue(design) {
+    let R = RSI_WALL + 1 / H_O;
+    R += layerResistance(design.wall.materialId, design.wall.thicknessMm);
+    if (design.wall.insulationMaterialId && design.wall.insulationThicknessMm) {
+      R += layerResistance(design.wall.insulationMaterialId, design.wall.insulationThicknessMm);
+    }
+    return 1 / R;
+  }
+  function roofUValue(design) {
+    let R = RSI_ROOF + 1 / H_O;
+    R += layerResistance(design.roof.materialId, design.roof.thicknessMm);
+    if (design.roof.insulationMaterialId && design.roof.insulationThicknessMm) {
+      R += layerResistance(design.roof.insulationMaterialId, design.roof.insulationThicknessMm);
+    }
+    return 1 / R;
+  }
+  function floorUValue(design) {
+    const mat = DATA.materialById(design.floor.materialId);
+    const thicknessMm = design.floor.thicknessMm || 150;
+    let R = R_GROUND + (mat && mat.k ? (thicknessMm / 1000) / mat.k : 0.1);
+    return 1 / R;
+  }
+  function windowUValue(win) {
+    const g = DATA.materialById(win.glazingMaterialId);
+    return g ? g.uValue : 2.8;
+  }
+
+  function ambientTempAt(season, hourDecimal) {
+    const mean = (season.tMin + season.tMax) / 2;
+    const amp = (season.tMax - season.tMin) / 2;
+    const rad = ((hourDecimal - 15) / 24) * 2 * Math.PI;
+    return mean + amp * Math.cos(rad);
+  }
+
+  function solarIrradianceAt(season, hourDecimal) {
+    const { sunrise, sunset, solarKwhDay } = season;
+    if (hourDecimal <= sunrise || hourDecimal >= sunset) return 0;
+    const dayLen = sunset - sunrise;
+    const x = (hourDecimal - sunrise) / dayLen;
+    const shape = Math.sin(Math.PI * x);
+    const peakWm2 = (solarKwhDay * 1000) / (dayLen * (2 / Math.PI));
+    return Math.max(0, shape * peakWm2);
+  }
+
+  function runSimulation(design, season, simConfig) {
+    const geom = computeGeometry(design);
+    const uWall = wallUValue(design), uRoof = roofUValue(design), uFloor = floorUValue(design);
+    const windowGroups = (design.windows || []).map(w => ({
+      ...w, uValue: windowUValue(w), shgc: (DATA.materialById(w.glazingMaterialId) || {}).shgc || 0.7,
+      totalArea: (w.areaEach || 0) * (w.count || 0)
+    }));
+    const doorArea = (design.doors || []).reduce((s, d) => s + (d.areaEach || 0) * (d.count || 0), 0);
+    const windowArea = windowGroups.reduce((s, w) => s + w.totalArea, 0);
+    const netWallArea = Math.max(0, geom.wallArea - windowArea - doorArea);
+
+    const windFactor = 1 + Math.min(0.6, (season.windMs || 2) * 0.06);
+    const ach = (design.airLeakageAch || 0.6) * windFactor;
+
+    const tm = design.thermalMass;
+    let massActive = !!(tm && tm.massKg > 0);
+    const massMat = massActive ? DATA.materialById(tm.materialId) : null;
+    let cMass = massActive ? tm.massKg * (massMat.cp || 900) : 0;
+    const massArea = massActive ? (tm.surfaceAreaM2 || 5) : 0;
+    const isPcm = massActive && massMat && massMat.pcmMeltC != null;
+
+    const cAir = geom.volume * AIR_RHO * AIR_CP * CFG.PHYSICS.FURNISHING_CAPACITANCE_FACTOR;
+
+    const dtSec = (simConfig.timeStepMinutes || 60) * 60;
+    const stepsPerDay = Math.round(24 * 3600 / dtSec);
+    const totalSteps = stepsPerDay * (simConfig.days || 1);
+
+    let tAir = (season.tMin + season.tMax) / 2;
+    let tMass = tAir;
+    const series = [];
+    const agg = { solarKwh: 0, wallLossKwh: 0, roofLossKwh: 0, floorLossKwh: 0, openingCondLossKwh: 0,
+      ventLossKwh: 0, massExchangeKwh: 0, internalKwh: 0, comfortSteps: 0, heatingReqKwh: 0, coolingReqKwh: 0,
+      incidentOnWindowKwh: 0 };
+
+    for (let i = 0; i < totalSteps; i++) {
+      const hourDecimal = (i * dtSec / 3600) % 24;
+      const tAmb = ambientTempAt(season, hourDecimal);
+      const gHoriz = solarIrradianceAt(season, hourDecimal);
+
+      const wallMat = DATA.materialById(design.wall.materialId) || { absorptivity: 0.6 };
+      let wallUA = 0, wallRefSum = 0;
+      geom.faces.forEach(f => {
+        const gFace = gHoriz * f.factor;
+        const tSolAir = tAmb + (wallMat.absorptivity * gFace) / H_O;
+        wallUA += uWall * f.areaM2;
+        wallRefSum += uWall * f.areaM2 * tSolAir;
+      });
+      const roofMat = DATA.materialById(design.roof.materialId) || { absorptivity: 0.6 };
+      const tSolAirRoof = tAmb + (roofMat.absorptivity * gHoriz) / H_O;
+      const roofUA = uRoof * geom.roofArea, roofRef = roofUA * tSolAirRoof;
+      const tGround = design.groundTempC ?? (season.tMin + season.tMax) / 2;
+      const floorUA = uFloor * geom.floorArea, floorRef = floorUA * tGround;
+
+      let qSolarWindow = 0, windowCondUA = 0;
+      windowGroups.forEach(w => {
+        const off = { FRONT: 0, BACK: 180, LEFT: -90, RIGHT: 90, PRIMARY: 0 }[w.orientation] ?? 0;
+        const f = faceFactor(geom.frontAzimuth, off);
+        qSolarWindow += w.totalArea * gHoriz * f * w.shgc;
+        windowCondUA += w.uValue * w.totalArea;
+      });
+      const windowCondRef = windowCondUA * tAmb;
+      const doorUA = 1.8 * doorArea, doorRef = doorUA * tAmb;
+      const ventUA = (ach * geom.volume / 3600) * AIR_RHO * AIR_CP, ventRef = ventUA * tAmb;
+      const qInternal = design.internalHeatGainW || 0;
+      const massUA = massActive ? H_MASS * massArea : 0, massRef = massUA * tMass;
+
+      const totalUA = wallUA + roofUA + floorUA + windowCondUA + doorUA + ventUA + massUA;
+      const totalRef = wallRefSum + roofRef + floorRef + windowCondRef + doorRef + ventRef + massRef + qSolarWindow + qInternal;
+      const cDt = cAir / dtSec;
+      const nextTair = (cDt * tAir + totalRef) / (cDt + totalUA);
+
+      const qWall = wallUA * nextTair - wallRefSum;
+      const qRoof = roofUA * nextTair - roofRef;
+      const qFloor = floorUA * nextTair - floorRef;
+      const qWindowCond = windowCondUA * nextTair - windowCondRef;
+      const qDoorCond = doorUA * nextTair - doorRef;
+      const qVent = ventUA * nextTair - ventRef;
+      const qMassExchange = massUA * (nextTair - tMass);
+
+      let nextTmass = tMass;
+      if (massActive) {
+        const solarToMass = 0.25 * qSolarWindow;
+        let effectiveCMass = cMass;
+        if (isPcm && Math.abs(tMass - massMat.pcmMeltC) < 1.5) {
+          effectiveCMass = cMass + (tm.massKg * massMat.pcmLatentJKg) / 3;
+        }
+        const cMassDt = effectiveCMass / dtSec;
+        nextTmass = (cMassDt * tMass + massUA * nextTair + solarToMass) / (cMassDt + massUA);
+      }
+
+      const inComfort = nextTair >= design.comfort.min && nextTair <= design.comfort.max;
+      if (inComfort) agg.comfortSteps++;
+      if (nextTair < design.comfort.min) {
+        agg.heatingReqKwh += ((uWall * geom.wallArea + uRoof * geom.roofArea + uFloor * geom.floorArea + qVentUA(ach, geom.volume)) * (design.comfort.min - nextTair) * dtSec) / 3.6e6;
+      }
+      if (nextTair > design.comfort.max) {
+        agg.coolingReqKwh += ((uWall * geom.wallArea + uRoof * geom.roofArea) * (nextTair - design.comfort.max) * dtSec) / 3.6e6;
+      }
+
+      const qNetAir = qSolarWindow + qInternal - qMassExchange - qWall - qRoof - qFloor - qWindowCond - qDoorCond - qVent;
+      series.push({
+        hourDecimal, stepIndex: i, tAmb: round2(tAmb), tIndoor: round2(nextTair), tMass: round2(nextTmass),
+        gHoriz: round2(gHoriz), qSolarWindow: round2(qSolarWindow), qWall: round2(qWall), qRoof: round2(qRoof),
+        qFloor: round2(qFloor), qWindowCond: round2(qWindowCond), qDoorCond: round2(qDoorCond), qVent: round2(qVent),
+        qMassExchange: round2(qMassExchange), qInternal: round2(qInternal), qNet: round2(qNetAir), inComfort
+      });
+
+      agg.solarKwh += (qSolarWindow * dtSec) / 3.6e6;
+      agg.wallLossKwh += Math.max(0, (qWall * dtSec) / 3.6e6);
+      agg.roofLossKwh += Math.max(0, (qRoof * dtSec) / 3.6e6);
+      agg.floorLossKwh += Math.max(0, (qFloor * dtSec) / 3.6e6);
+      agg.openingCondLossKwh += Math.max(0, ((qWindowCond + qDoorCond) * dtSec) / 3.6e6);
+      agg.ventLossKwh += Math.max(0, (qVent * dtSec) / 3.6e6);
+      agg.massExchangeKwh += (qMassExchange * dtSec) / 3.6e6;
+      agg.internalKwh += (qInternal * dtSec) / 3.6e6;
+      agg.incidentOnWindowKwh += (gHoriz * windowArea * dtSec) / 3.6e6;
+
+      tAir = nextTair;
+      tMass = nextTmass;
+    }
+
+    function qVentUA(achV, volume) { return (achV * volume / 3600) * AIR_RHO * AIR_CP; }
+
+    const totalDays = simConfig.days || 1;
+    const comfortHoursPerDay = (agg.comfortSteps * (dtSec / 3600)) / totalDays;
+    const nightSteps = series.filter(s => s.hourDecimal < 6 || s.hourDecimal >= 20);
+    const daySteps = series.filter(s => s.hourDecimal >= 6 && s.hourDecimal < 20);
+    const nightComfortPct = pct(nightSteps.filter(s => s.inComfort).length, nightSteps.length);
+    const dayComfortPct = pct(daySteps.filter(s => s.inComfort).length, daySteps.length);
+
+    const totalLossKwh = agg.wallLossKwh + agg.roofLossKwh + agg.floorLossKwh + agg.openingCondLossKwh + agg.ventLossKwh;
+    const solarUtilizationPct = agg.incidentOnWindowKwh > 0.001 ? clamp(pct(agg.solarKwh, agg.incidentOnWindowKwh), 0, 100) : 0;
+    const heatRetentionPct = clamp(pct(agg.solarKwh + agg.internalKwh + Math.max(0, -agg.massExchangeKwh), totalLossKwh), 0, 100);
+
+    const comfortScore = clamp(0.5 * dayComfortPct + 0.5 * nightComfortPct, 0, 100);
+    const energyDemandPerDay = (agg.heatingReqKwh + agg.coolingReqKwh) / totalDays;
+    const energyAdequacyPct = clamp(100 - energyDemandPerDay * 1.5, 0, 100);
+    const thermalComfortScore = Math.round(
+      0.45 * comfortScore + 0.25 * heatRetentionPct + 0.20 * solarUtilizationPct + 0.10 * energyAdequacyPct
+    );
+
+    const minIndoor = Math.min(...series.map(s => s.tIndoor));
+    const maxIndoor = Math.max(...series.map(s => s.tIndoor));
+
+    return {
+      geometry: geom, uValues: { wall: uWall, roof: uRoof, floor: uFloor },
+      netWallArea, windowArea, doorArea, series,
+      daily: {
+        solarKwh: round2(agg.solarKwh / totalDays), wallLossKwh: round2(agg.wallLossKwh / totalDays),
+        roofLossKwh: round2(agg.roofLossKwh / totalDays), floorLossKwh: round2(agg.floorLossKwh / totalDays),
+        openingLossKwh: round2(agg.openingCondLossKwh / totalDays), ventLossKwh: round2(agg.ventLossKwh / totalDays),
+        massExchangeKwh: round2(agg.massExchangeKwh / totalDays), internalKwh: round2(agg.internalKwh / totalDays),
+        totalLossKwh: round2(totalLossKwh / totalDays),
+        netKwh: round2((agg.solarKwh + agg.internalKwh - totalLossKwh) / totalDays),
+        heatingReqKwh: round2(agg.heatingReqKwh / totalDays), coolingReqKwh: round2(agg.coolingReqKwh / totalDays)
+      },
+      comfort: {
+        comfortHoursPerDay: round2(comfortHoursPerDay), dayComfortPct: round2(dayComfortPct),
+        nightComfortPct: round2(nightComfortPct), minIndoor: round2(minIndoor), maxIndoor: round2(maxIndoor)
+      },
+      scores: {
+        comfortScore: round2(comfortScore), heatRetentionPct: round2(heatRetentionPct),
+        solarUtilizationPct: round2(solarUtilizationPct), thermalComfortScore: clamp(thermalComfortScore, 0, 100)
+      }
+    };
+  }
+
+  function round2(x) { return Math.round(x * 100) / 100; }
+  function pct(n, d) { return d > 0 ? (100 * n / d) : 0; }
+  function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+  function estimateCost(design) {
+    const geom = computeGeometry(design);
+    const wallMat = DATA.materialById(design.wall.materialId) || {};
+    const roofMat = DATA.materialById(design.roof.materialId) || {};
+    const insMat = design.wall.insulationMaterialId ? DATA.materialById(design.wall.insulationMaterialId) : null;
+    let cost = 0;
+    cost += (wallMat.costPerM2 || 1000) * geom.wallArea;
+    cost += (roofMat.costPerM2 || 1200) * geom.roofArea;
+    if (insMat) cost += (insMat.costPerM2 || 500) * geom.wallArea * ((design.wall.insulationThicknessMm || 0) / 75);
+    (design.windows || []).forEach(w => {
+      const g = DATA.materialById(w.glazingMaterialId) || {};
+      cost += (g.costPerM2 || 2000) * (w.areaEach || 0) * (w.count || 0);
+    });
+    if (design.thermalMass && design.thermalMass.massKg) {
+      const m = DATA.materialById(design.thermalMass.materialId) || {};
+      cost += (m.costPerKg || 5) * design.thermalMass.massKg;
+    }
+    return Math.round(cost);
+  }
+
+  function cloneDesign(d) { return JSON.parse(JSON.stringify(d)); }
+
+  function generateCandidates(baseDesign) {
+    const orientations = ["SOUTH", "SE", "SW", "EAST"];
+    const insulationMm = [50, 75, 100, 150];
+    const windowPct = [0.08, 0.12, 0.16, 0.20];
+    const glazings = ["glaze_single", "glaze_double", "glaze_triple", "glaze_lowe"];
+    const massLevels = [0, 400, 900, 1600];
+
+    const candidates = [];
+    let n = 0;
+    for (const orient of orientations) {
+      for (const insul of insulationMm) {
+        for (const wpct of windowPct) {
+          for (const glz of glazings) {
+            for (const mass of massLevels) {
+              n++;
+              if (n % 3 !== 0 && candidates.length > 0) continue;
+              const d = cloneDesign(baseDesign);
+              d.orientation = orient === "SOUTH" || orient === "EAST" ? orient : "CUSTOM";
+              if (orient === "SE") { d.orientation = "CUSTOM"; d.azimuthDeg = 45; }
+              if (orient === "SW") { d.orientation = "CUSTOM"; d.azimuthDeg = 315; }
+              if (orient === "SOUTH") d.azimuthDeg = 0;
+              if (orient === "EAST") d.azimuthDeg = 90;
+              d.wall.insulationMaterialId = d.wall.insulationMaterialId || "ins_puf";
+              d.wall.insulationThicknessMm = insul;
+              d.roof.insulationMaterialId = d.roof.insulationMaterialId || "ins_puf";
+              d.roof.insulationThicknessMm = insul;
+              const geom0 = computeGeometry(d);
+              const targetWindowArea = geom0.wallArea * wpct;
+              d.windows = [{ areaEach: round2(targetWindowArea), count: 1, orientation: "FRONT", glazingMaterialId: glz }];
+              if (mass > 0) {
+                d.thermalMass = { materialId: "mass_composite", massKg: mass, surfaceAreaM2: Math.min(geom0.floorArea, mass / 300) };
+              } else {
+                d.thermalMass = null;
+              }
+              candidates.push({ design: d, params: { orient, insul, wpct, glz, mass } });
+              if (candidates.length >= 60) return candidates;
+            }
+          }
+        }
+      }
+    }
+    return candidates;
+  }
+
+  function scoreCandidate(result, cost, weights, costRange, energyRange) {
+    const comfort = result.scores.comfortScore;
+    const retention = result.scores.heatRetentionPct;
+    const solar = result.scores.solarUtilizationPct;
+    const energyDemand = result.daily.heatingReqKwh + result.daily.coolingReqKwh;
+    energyRange = energyRange || { min: energyDemand * 0.7, max: energyDemand * 1.3 };
+    const energyScore = energyRange.max > energyRange.min
+      ? clamp(100 * (1 - (energyDemand - energyRange.min) / (energyRange.max - energyRange.min)), 0, 100)
+      : 100;
+    const costScore = costRange.max > costRange.min
+      ? clamp(100 * (1 - (cost - costRange.min) / (costRange.max - costRange.min)), 0, 100)
+      : 100;
+    const total = weights.comfort * comfort + weights.retention * retention + weights.solar * solar +
+      weights.energy * energyScore + weights.cost * costScore;
+    return { comfort, retention, solar, energyScore, costScore, energyDemand, total: round2(total) };
+  }
+
+  function runOptimization(baseDesign, season, simConfig, weights) {
+    const rawCandidates = generateCandidates(baseDesign);
+    const evaluated = rawCandidates.map(c => {
+      const result = runSimulation(c.design, season, simConfig);
+      const cost = estimateCost(c.design);
+      return { ...c, result, cost };
+    });
+    const costs = evaluated.map(e => e.cost);
+    const costRange = { min: Math.min(...costs), max: Math.max(...costs) };
+    const demands = evaluated.map(e => e.result.daily.heatingReqKwh + e.result.daily.coolingReqKwh);
+    const energyRange = { min: Math.min(...demands), max: Math.max(...demands) };
+    evaluated.forEach(e => { e.score = scoreCandidate(e.result, e.cost, weights, costRange, energyRange); });
+    evaluated.sort((a, b) => b.score.total - a.score.total);
+    const top = evaluated.slice(0, 5);
+    const labels = ["A", "B", "C", "D", "E"];
+    top.forEach((e, i) => { e.label = labels[i]; e.isRecommended = i === 0; });
+    return { candidatesEvaluated: evaluated.length, top, recommended: top[0] };
+  }
+
+  function sensitivityAnalysis(baseDesign, season, simConfig, weights) {
+    const baseResult = runSimulation(baseDesign, season, simConfig);
+    const baseCost = estimateCost(baseDesign);
+    const baseScore = scoreCandidate(baseResult, baseCost, weights, { min: baseCost * 0.7, max: baseCost * 1.3 }).total;
+
+    const perturbations = [
+      { key: "Insulation thickness", apply: d => { d.wall.insulationThicknessMm = (d.wall.insulationThicknessMm || 75) + 50; d.roof.insulationThicknessMm = (d.roof.insulationThicknessMm || 75) + 50; } },
+      { key: "Orientation", apply: d => { d.orientation = "SOUTH"; d.azimuthDeg = 0; } },
+      { key: "Window area", apply: d => { (d.windows || []).forEach(w => w.areaEach *= 1.5); } },
+      { key: "Thermal mass", apply: d => { d.thermalMass = { materialId: "mass_composite", massKg: 1200, surfaceAreaM2: 6 }; } },
+      { key: "Wall material", apply: d => { d.wall.materialId = "wall_composite"; } },
+      { key: "Glazing type", apply: d => { (d.windows || []).forEach(w => w.glazingMaterialId = "glaze_triple"); } },
+      { key: "Shelter volume", apply: d => { d.height = (d.height || 3) * 1.15; } }
+    ];
+
+    const impacts = perturbations.map(p => {
+      const d = cloneDesign(baseDesign);
+      p.apply(d);
+      const result = runSimulation(d, season, simConfig);
+      const cost = estimateCost(d);
+      const score = scoreCandidate(result, cost, weights, { min: cost * 0.7, max: cost * 1.3 }).total;
+      return { parameter: p.key, deltaScore: round2(score - baseScore) };
+    }).sort((a, b) => Math.abs(b.deltaScore) - Math.abs(a.deltaScore));
+
+    return { baseScore: round2(baseScore), impacts };
+  }
+
+  function validationStats(points) {
+    const n = points.length;
+    if (n === 0) return null;
+    const errs = points.map(p => p.predicted - p.measured);
+    const mae = errs.reduce((s, e) => s + Math.abs(e), 0) / n;
+    const rmse = Math.sqrt(errs.reduce((s, e) => s + e * e, 0) / n);
+    const mape = points.reduce((s, p) => s + Math.abs((p.predicted - p.measured) / (p.measured || 1e-6)), 0) / n * 100;
+    const meanMeasured = points.reduce((s, p) => s + p.measured, 0) / n;
+    const ssTot = points.reduce((s, p) => s + Math.pow(p.measured - meanMeasured, 2), 0);
+    const ssRes = points.reduce((s, p) => s + Math.pow(p.measured - p.predicted, 2), 0);
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : null;
+    return { mae: round2(mae), rmse: round2(rmse), mape: round2(mape), r2: r2 !== null ? Math.round(r2 * 1000) / 1000 : null, n };
+  }
+
+  return {
+    computeGeometry, wallUValue, roofUValue, floorUValue, windowUValue,
+    ambientTempAt, solarIrradianceAt, runSimulation, estimateCost,
+    generateCandidates, scoreCandidate, runOptimization, sensitivityAnalysis,
+    validationStats, orientationFactorFromAngle, faceFactor, frontAzimuthOf
+  };
+})();
+</script>
+
+<script>
+/* AreaTherm — dependency-free inline-SVG chart helpers. */
+window.APP_CHARTS = (function () {
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function textEl(x, y, text, cls, anchor) {
+    const t = el("text", { x, y, class: cls || "chart-label", "text-anchor": anchor || "start" });
+    t.textContent = text;
+    return t;
+  }
+
+  function niceRange(min, max) {
+    if (min === max) { min -= 1; max += 1; }
+    const pad = (max - min) * 0.1;
+    return [min - pad, max + pad];
+  }
+
+  function lineChart(container, series, opts) {
+    opts = opts || {};
+    const width = opts.width || 640, height = opts.height || 280;
+    const ml = 46, mr = 16, mt = 14, mb = 34;
+    const plotW = width - ml - mr, plotH = height - mt - mb;
+    const allX = series.flatMap(s => s.data.map(d => d.x));
+    const allY = series.flatMap(s => s.data.map(d => d.y));
+    let [yMin, yMax] = niceRange(Math.min(...allY, opts.comfortBand ? opts.comfortBand.min : Infinity),
+                                  Math.max(...allY, opts.comfortBand ? opts.comfortBand.max : -Infinity));
+    const xMin = Math.min(...allX), xMax = Math.max(...allX);
+    const sx = x => ml + (xMax > xMin ? (x - xMin) / (xMax - xMin) : 0) * plotW;
+    const sy = y => mt + plotH - ((y - yMin) / (yMax - yMin)) * plotH;
+
+    const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart-svg" });
+
+    if (opts.comfortBand) {
+      const y1 = sy(opts.comfortBand.max), y2 = sy(opts.comfortBand.min);
+      svg.appendChild(el("rect", { x: ml, y: y1, width: plotW, height: Math.max(0, y2 - y1), class: "chart-comfort-band" }));
+    }
+
+    const ticks = 5;
+    for (let i = 0; i <= ticks; i++) {
+      const yv = yMin + (i / ticks) * (yMax - yMin);
+      const y = sy(yv);
+      svg.appendChild(el("line", { x1: ml, y1: y, x2: width - mr, y2: y, class: "chart-grid" }));
+      svg.appendChild(textEl(ml - 8, y + 4, Math.round(yv * 10) / 10, "chart-tick", "end"));
+    }
+    const xTickCount = Math.min(8, opts.xTicks || 8);
+    for (let i = 0; i <= xTickCount; i++) {
+      const xv = xMin + (i / xTickCount) * (xMax - xMin);
+      const x = sx(xv);
+      svg.appendChild(textEl(x, height - mb + 16, opts.xFormat ? opts.xFormat(xv) : Math.round(xv), "chart-tick", "middle"));
+    }
+    svg.appendChild(el("line", { x1: ml, y1: mt + plotH, x2: width - mr, y2: mt + plotH, class: "chart-axis" }));
+    svg.appendChild(el("line", { x1: ml, y1: mt, x2: ml, y2: mt + plotH, class: "chart-axis" }));
+
+    series.forEach(s => {
+      const pts = s.data.map(d => `${sx(d.x)},${sy(d.y)}`).join(" ");
+      svg.appendChild(el("polyline", { points: pts, class: "chart-line", style: `stroke:${s.color}` }));
+    });
+
+    if (opts.yLabel) {
+      const lbl = textEl(14, mt + plotH / 2, opts.yLabel, "chart-axis-label", "middle");
+      lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
+      svg.appendChild(lbl);
+    }
+    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 4, opts.xLabel, "chart-axis-label", "middle"));
+
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    if (series.length > 1 || opts.legend) {
+      const legend = document.createElement("div");
+      legend.className = "chart-legend";
+      series.forEach(s => {
+        const item = document.createElement("span");
+        item.className = "chart-legend-item";
+        item.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
+        legend.appendChild(item);
+      });
+      container.appendChild(legend);
+    }
+  }
+
+  function barChart(container, items, opts) {
+    opts = opts || {};
+    const width = opts.width || 560, barH = 26, gap = 10;
+    const height = items.length * (barH + gap) + 20;
+    const ml = opts.labelWidth || 170, mr = 60;
+    const plotW = width - ml - mr;
+    const maxAbs = Math.max(1, ...items.map(i => Math.abs(i.value)));
+    const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart-svg" });
+    items.forEach((it, i) => {
+      const y = 10 + i * (barH + gap);
+      svg.appendChild(textEl(ml - 10, y + barH / 2 + 4, it.label, "chart-tick", "end"));
+      const w = (Math.abs(it.value) / maxAbs) * plotW;
+      const x = it.value >= 0 ? ml : ml - w;
+      svg.appendChild(el("rect", { x, y, width: Math.max(1, w), height: barH, class: it.value >= 0 ? "chart-bar-pos" : "chart-bar-neg" }));
+      svg.appendChild(textEl(ml + (it.value >= 0 ? w + 6 : -w - 6), y + barH / 2 + 4, (it.value >= 0 ? "+" : "") + it.value, "chart-tick", it.value >= 0 ? "start" : "end"));
+    });
+    container.innerHTML = "";
+    container.appendChild(svg);
+  }
+
+  function scatterChart(container, points, opts) {
+    opts = opts || {};
+    const width = opts.width || 420, height = opts.height || 320;
+    const ml = 46, mr = 16, mt = 14, mb = 34;
+    const plotW = width - ml - mr, plotH = height - mt - mb;
+    const allX = points.map(p => p.x), allY = points.map(p => p.y);
+    const lo = Math.min(...allX, ...allY), hi = Math.max(...allX, ...allY);
+    const [mn, mx] = niceRange(lo, hi);
+    const s = v => ({ x: ml + ((v - mn) / (mx - mn)) * plotW, y: mt + plotH - ((v - mn) / (mx - mn)) * plotH });
+    const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart-svg" });
+    svg.appendChild(el("line", { x1: ml, y1: mt + plotH, x2: width - mr, y2: mt + plotH, class: "chart-axis" }));
+    svg.appendChild(el("line", { x1: ml, y1: mt, x2: ml, y2: mt + plotH, class: "chart-axis" }));
+    const p1 = s(mn), p2 = s(mx);
+    svg.appendChild(el("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, class: "chart-ideal-line" }));
+    points.forEach(p => {
+      const c = s(p.x);
+      svg.appendChild(el("circle", { cx: c.x, cy: mt + plotH - (c.y - mt), r: 4, class: "chart-point" }));
+    });
+    container.innerHTML = "";
+    svg.querySelectorAll("circle").forEach((c, idx) => {
+      const p = points[idx];
+      const px = ml + ((p.x - mn) / (mx - mn)) * plotW;
+      const py = mt + plotH - ((p.y - mn) / (mx - mn)) * plotH;
+      c.setAttribute("cx", px); c.setAttribute("cy", py);
+    });
+    svg.appendChild(textEl(ml + plotW / 2, height - 4, opts.xLabel || "Measured (°C)", "chart-axis-label", "middle"));
+    const lbl = textEl(14, mt + plotH / 2, opts.yLabel || "Predicted (°C)", "chart-axis-label", "middle");
+    lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
+    svg.appendChild(lbl);
+    container.appendChild(svg);
+  }
+
+  function scoreGauge(container, score, sublabel) {
+    const size = 140, stroke = 12, r = (size - stroke) / 2, c = size / 2;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference * (1 - Math.max(0, Math.min(100, score)) / 100);
+    const color = score >= 80 ? "var(--good)" : score >= 60 ? "var(--warn)" : "var(--bad)";
+    container.innerHTML = `
+      <svg viewBox="0 0 ${size} ${size}" class="gauge-svg">
+        <circle cx="${c}" cy="${c}" r="${r}" class="gauge-track" stroke-width="${stroke}" fill="none"/>
+        <circle cx="${c}" cy="${c}" r="${r}" stroke="${color}" stroke-width="${stroke}" fill="none"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"
+          transform="rotate(-90 ${c} ${c})"/>
+        <text x="${c}" y="${c - 4}" text-anchor="middle" class="gauge-score">${Math.round(score)}</text>
+        <text x="${c}" y="${c + 18}" text-anchor="middle" class="gauge-max">/100</text>
+      </svg>
+      ${sublabel ? `<div class="gauge-sublabel">${sublabel}</div>` : ""}`;
+  }
+
+  function heatFlowDiagram(container, daily) {
+    const rows = [
+      { label: "SOLAR INPUT", value: daily.solarKwh, positive: true },
+      { label: "INTERNAL GAINS", value: daily.internalKwh, positive: true },
+      { label: "WALL LOSS", value: -daily.wallLossKwh, positive: false },
+      { label: "ROOF LOSS", value: -daily.roofLossKwh, positive: false },
+      { label: "FLOOR LOSS", value: -daily.floorLossKwh, positive: false },
+      { label: "OPENING LOSS", value: -daily.openingLossKwh, positive: false },
+      { label: "VENTILATION LOSS", value: -daily.ventLossKwh, positive: false },
+      { label: "THERMAL MASS EXCHANGE", value: -daily.massExchangeKwh, positive: daily.massExchangeKwh <= 0 },
+      { label: "NET ENERGY", value: daily.netKwh, positive: daily.netKwh >= 0, isNet: true }
+    ];
+    const maxAbs = Math.max(1, ...rows.map(r => Math.abs(r.value)));
+    container.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.className = "heatflow";
+    rows.forEach((r, i) => {
+      const row = document.createElement("div");
+      row.className = "heatflow-row" + (r.isNet ? " heatflow-net" : "");
+      const barWidth = Math.min(100, (Math.abs(r.value) / maxAbs) * 100);
+      row.innerHTML = `
+        <div class="heatflow-label">${r.label}</div>
+        <div class="heatflow-bar-track">
+          <div class="heatflow-bar ${r.value >= 0 ? "pos" : "neg"}" style="width:${barWidth}%"></div>
+        </div>
+        <div class="heatflow-value ${r.value >= 0 ? "pos" : "neg"}">${r.value >= 0 ? "+" : ""}${r.value.toFixed(1)} kWh/day</div>`;
+      wrap.appendChild(row);
+      if (i < rows.length - 1) {
+        const arrow = document.createElement("div");
+        arrow.className = "heatflow-arrow";
+        arrow.textContent = "↓";
+        wrap.appendChild(arrow);
+      }
+    });
+    container.appendChild(wrap);
+  }
+
+  return { lineChart, barChart, scatterChart, scoreGauge, heatFlowDiagram };
+})();
+</script>
+
+<script>
+/* AreaTherm — app state ("database") + localStorage persistence. */
+window.APP_STORE = (function () {
+  const DATA = window.APP_DATA;
+  const KEY = "areatherm_state_v1";
+
+  function defaultDesign() {
+    return {
+      name: "Baseline Shelter",
+      shape: "RECTANGULAR",
+      length: 6, width: 4, height: 3,
+      orientation: "EAST", azimuthDeg: 90,
+      wall: { materialId: "wall_stone", thicknessMm: 400, insulationMaterialId: "ins_puf", insulationThicknessMm: 50 },
+      roof: { materialId: "roof_rcc", thicknessMm: 150, insulationMaterialId: "ins_puf", insulationThicknessMm: 50 },
+      floor: { materialId: "wall_concrete", thicknessMm: 100 },
+      windows: [{ areaEach: 2.4, count: 1, orientation: "FRONT", glazingMaterialId: "glaze_double" }],
+      doors: [{ areaEach: 1.8, count: 1 }],
+      airLeakageAch: 0.8,
+      thermalMass: { materialId: "mass_stone", massKg: 800, surfaceAreaM2: 6 },
+      occupancy: 2,
+      internalHeatGainW: 150,
+      groundTempC: null,
+      comfort: { profileId: "human", min: 18, max: 27 }
+    };
+  }
+
+  function freshState() {
+    return {
+      project: { name: "Untitled Project", createdAt: new Date().toISOString() },
+      locationKey: null,
+      location: null,
+      seasonKey: "Winter",
+      climateSource: null,
+      design: defaultDesign(),
+      simConfig: { timeStepMinutes: 60, periodType: "24H", days: 1 },
+      weights: { ...window.APP_CONFIG.DEFAULT_WEIGHTS },
+      mode: "SIMPLE",
+      simulationHistory: [],
+      lastSimulationResult: null,
+      lastOptimizationResult: null,
+      validationDatasets: []
+    };
+  }
+
+  let state = load() || freshState();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function get() { return state; }
+  function reset() { state = freshState(); save(); return state; }
+
+  function loadLadakhDemo(locationKey, seasonKey) {
+    const loc = DATA.LOCATIONS[locationKey];
+    if (!loc) return;
+    state.locationKey = locationKey;
+    state.location = loc;
+    state.seasonKey = seasonKey || "Winter";
+    state.climateSource = { type: "DEMO_ILLUSTRATIVE", label: "Demo / illustrative climate dataset" };
+    state.project.name = `${loc.label} — Passive Agricultural Shelter`;
+    save();
+  }
+
+  function currentSeason() {
+    if (!state.location) return null;
+    return state.location.seasons[state.seasonKey];
+  }
+
+  function updateDesign(patch) {
+    state.design = { ...state.design, ...patch };
+    save();
+  }
+
+  function recordSimulation(result) {
+    state.lastSimulationResult = result;
+    state.simulationHistory.unshift({
+      id: "SIM-" + Date.now(),
+      ts: new Date().toISOString(),
+      locationLabel: state.location ? state.location.label : "Custom location",
+      designName: state.design.name,
+      thermalComfortScore: result.scores.thermalComfortScore
+    });
+    state.simulationHistory = state.simulationHistory.slice(0, 20);
+    save();
+  }
+
+  function recordOptimization(result) {
+    state.lastOptimizationResult = result;
+    save();
+  }
+
+  function addValidationDataset(ds) {
+    state.validationDatasets.unshift(ds);
+    save();
+  }
+
+  return {
+    get, save, reset, loadLadakhDemo, currentSeason, updateDesign,
+    recordSimulation, recordOptimization, addValidationDataset, defaultDesign
+  };
+})();
+</script>
+
+<script>
+/* AreaTherm UI — Dashboard, Location & Climate, Shelter Designer, Materials */
+window.UI = window.UI || {};
+
+(function () {
+  const CFG = window.APP_CONFIG, DATA = window.APP_DATA, ENGINE = window.APP_ENGINE, STORE = window.APP_STORE, CH = window.APP_CHARTS;
+
+  const heroHtml = (compact) => `
+    <div class="hero" style="${compact ? "padding:22px 28px;" : ""}">
+      <span class="tag tag-model" style="margin-bottom:10px;">Physics-based decision-support platform</span>
+      <h1 style="${compact ? "font-size:20px;" : ""}">Design Shelters for the Climate Around Them.</h1>
+      <p>An area-specific, physics-based software platform for predicting thermal performance and
+      optimizing passive shelter design — starting with Ladakh.</p>
+      ${compact ? "" : `<div class="flow">
+        <span class="step">CLIMATE</span><span class="arrow">↓</span>
+        <span class="step">DESIGN</span><span class="arrow">↓</span>
+        <span class="step">MATERIALS</span><span class="arrow">↓</span>
+        <span class="step">SIMULATION</span><span class="arrow">↓</span>
+        <span class="step">OPTIMIZATION</span><span class="arrow">↓</span>
+        <span class="step">RECOMMENDATION</span>
+      </div>`}
+      <div class="cta-row">
+        <button class="btn btn-accent" id="heroDemoBtn">▶ Run Ladakh Demo</button>
+        <button class="btn" id="heroWorkflowBtn" style="background:transparent;border-color:rgba(255,255,255,.4);color:#fff;">See full workflow →</button>
+      </div>
+    </div>`;
+
+  UI.renderDashboard = function (root) {
+    const s = STORE.get();
+    const last = s.lastSimulationResult;
+    const hist = s.simulationHistory;
+    const avgScore = hist.length ? (hist.reduce((a, h) => a + h.thermalComfortScore, 0) / hist.length) : null;
+    const bestOpt = s.lastOptimizationResult ? s.lastOptimizationResult.recommended : null;
+    const uniqueLocations = new Set(hist.map(h => h.locationLabel)).size;
+
+    root.innerHTML = `
+      ${heroHtml(hist.length > 0)}
+      <div class="grid grid-4" style="margin-bottom:18px;">
+        <div class="card metric-card"><div class="metric-label">Total Simulations</div><div class="metric-value">${hist.length}</div><div class="metric-sub">this session</div></div>
+        <div class="card metric-card"><div class="metric-label">Locations Analysed</div><div class="metric-value">${uniqueLocations || (s.location ? 1 : 0)}</div><div class="metric-sub">${s.location ? U.esc(s.location.label) : "none selected"}</div></div>
+        <div class="card metric-card"><div class="metric-label">Best Performing Design</div><div class="metric-value">${bestOpt ? bestOpt.score.total.toFixed(0) : "—"}</div><div class="metric-sub">${bestOpt ? "Design " + bestOpt.label + " (optimization run)" : "run optimization"}</div></div>
+        <div class="card metric-card"><div class="metric-label">Avg. Thermal Comfort Score</div><div class="metric-value">${avgScore != null ? avgScore.toFixed(0) : "—"}</div><div class="metric-sub">across ${hist.length} run(s)</div></div>
+      </div>
+      <div class="grid grid-3" style="margin-bottom:18px;">
+        <div class="card metric-card"><div class="metric-label">Solar Energy Potential</div><div class="metric-value">${s.location ? s.location.annualSolarKwhM2Yr : "—"}</div><div class="metric-sub">kWh/m²/yr <span class="tag tag-demo">${s.location ? "demo" : ""}</span></div></div>
+        <div class="card metric-card"><div class="metric-label">Estimated Heat Loss</div><div class="metric-value">${last ? last.daily.totalLossKwh.toFixed(1) : "—"}</div><div class="metric-sub">kWh/day <span class="tag tag-model">${last ? "model prediction" : ""}</span></div></div>
+        <div class="card metric-card"><div class="metric-label">Current Simulation Status</div><div class="metric-value" style="font-size:16px;">${last ? "✅ Complete" : "○ Not run"}</div><div class="metric-sub">${last ? "last run this session" : "go to Thermal Simulation"}</div></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Thermal Comfort Score</h3>
+          ${last ? `
+            <div style="display:flex; align-items:center; gap:22px;">
+              <div id="dashGauge"></div>
+              <ul class="checklist" style="font-size:12.5px;">
+                <li>Daytime comfort: <b>${last.comfort.dayComfortPct.toFixed(0)}%</b></li>
+                <li>Night comfort: <b>${last.comfort.nightComfortPct.toFixed(0)}%</b></li>
+                <li>Solar utilization: <b>${last.scores.solarUtilizationPct.toFixed(0)}%</b></li>
+                <li>Heat retention: <b>${last.scores.heatRetentionPct.toFixed(0)}%</b></li>
+              </ul>
+            </div>` : `<p class="subtitle">Run a thermal simulation to populate the comfort score.</p>`}
+        </div>
+        <div class="card">
+          <h3>Recent Simulations</h3>
+          ${hist.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Location</th><th>Design</th><th>Score</th></tr></thead><tbody>
+            ${hist.slice(0, 6).map(h => `<tr><td style="font-family:var(--mono);font-size:11px;">${h.id}</td><td>${U.esc(h.locationLabel)}</td><td>${U.esc(h.designName)}</td><td class="num">${h.thermalComfortScore}</td></tr>`).join("")}
+          </tbody></table></div>` : `<p class="subtitle">No simulations yet. Try the Ladakh demo.</p>`}
+        </div>
+      </div>`;
+
+    if (last) CH.scoreGauge(U.qs("#dashGauge", root), last.scores.thermalComfortScore);
+    U.on("#heroDemoBtn", "click", () => window.APP.runLadakhDemo(), root);
+    U.on("#heroWorkflowBtn", "click", () => window.APP.navigate("location"), root);
+  };
+
+  UI.renderLocation = function (root) {
+    const s = STORE.get();
+    const loc = s.location;
+    const locOptions = Object.values(DATA.LOCATIONS).map(l => `<option value="${l.key}" ${loc && loc.key === l.key ? "selected" : ""}>${l.label}</option>`).join("");
+    const seasonOptions = (loc ? Object.keys(loc.seasons) : ["Winter", "Spring", "Summer", "Autumn"])
+      .map(k => `<option value="${k}" ${s.seasonKey === k ? "selected" : ""}>${k}</option>`).join("");
+    const season = STORE.currentSeason();
+
+    root.innerHTML = `
+      <h1>Location &amp; Climate Profile</h1>
+      <p class="subtitle">Enter a location's climate inputs, or load an illustrative Ladakh demo dataset.</p>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Demo Climate Dataset ${s.climateSource && s.climateSource.type === "DEMO_ILLUSTRATIVE" ? '<span class="tag tag-demo">demo / illustrative</span>' : ""}</h3>
+          <div class="form-inline">
+            <div class="form-row"><label>Ladakh location</label>
+              <select id="locSelect"><option value="">— select —</option>${locOptions}</select>
+            </div>
+            <div class="form-row"><label>Season</label>
+              <select id="seasonSelect">${seasonOptions}</select>
+            </div>
+          </div>
+          <button class="btn btn-accent btn-sm" id="loadDemoBtn">Load sample profile</button>
+          <p class="hint" style="margin-top:10px;">Demo values are illustrative reference figures for prototype
+          demonstration only — not experimentally validated or field-measured. Architecture supports future
+          integration with NASA POWER, ERA5, IMD, and other validated datasets (not live in this build).</p>
+        </div>
+
+        <div class="card">
+          <h3>Location Details ${loc ? `<span class="tag tag-input">from dataset</span>` : `<span class="tag tag-field">user-provided</span>`}</h3>
+          <div class="form-inline">
+            <div class="form-row"><label>Country</label><input id="locCountry" value="${loc ? loc.country : "India"}"></div>
+            <div class="form-row"><label>State</label><input id="locState" value="${loc ? loc.state : ""}"></div>
+            <div class="form-row"><label>District</label><input id="locDistrict" value="${loc ? loc.district : ""}"></div>
+          </div>
+          <div class="form-inline">
+            <div class="form-row"><label>Latitude</label><input id="locLat" type="number" step="0.0001" value="${loc ? loc.latitude : ""}"></div>
+            <div class="form-row"><label>Longitude</label><input id="locLon" type="number" step="0.0001" value="${loc ? loc.longitude : ""}"></div>
+            <div class="form-row"><label>Elevation (m)</label><input id="locElev" type="number" value="${loc ? loc.elevationM : ""}"></div>
+          </div>
+        </div>
+      </div>
+
+      ${season ? `
+      <div class="card" style="margin-top:16px;">
+        <h3>Climate Inputs — ${U.esc(s.seasonKey)} (${loc.label}) <span class="tag tag-demo">demo / illustrative</span></h3>
+        <div class="grid grid-4">
+          <div class="metric-card"><div class="metric-label">Ambient Temp Range</div><div class="metric-value" style="font-size:18px;">${season.tMin} to ${season.tMax} °C</div></div>
+          <div class="metric-card"><div class="metric-label">Solar Irradiance</div><div class="metric-value" style="font-size:18px;">${season.solarKwhDay} kWh/m²/day</div></div>
+          <div class="metric-card"><div class="metric-label">Sunshine Window</div><div class="metric-value" style="font-size:18px;">${season.sunrise}h – ${season.sunset}h</div></div>
+          <div class="metric-card"><div class="metric-label">Wind / RH / Cloud</div><div class="metric-value" style="font-size:15px;">${season.windMs} m/s · ${season.rhPct}% · ${season.cloudPct}%</div></div>
+        </div>
+        <h3 style="margin-top:16px;">24-Hour Ambient Temperature &amp; Solar Irradiance (model input curve)</h3>
+        <div id="climateChart"></div>
+      </div>` : `<div class="card" style="margin-top:16px;"><p class="subtitle">Load a demo profile or enter custom climate data (Advanced Mode) to continue.</p></div>`}
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Comfort Requirement</h3>
+        <div class="form-inline">
+          <div class="form-row"><label>Comfort profile</label>
+            <select id="comfortProfile">${DATA.COMFORT_PROFILES.map(c => `<option value="${c.id}" ${s.design.comfort.profileId === c.id ? "selected" : ""}>${c.label}</option>`).join("")}</select>
+          </div>
+          <div class="form-row"><label>Min comfortable temp (°C)</label><input id="comfortMin" type="number" value="${s.design.comfort.min}"></div>
+          <div class="form-row"><label>Max comfortable temp (°C)</label><input id="comfortMax" type="number" value="${s.design.comfort.max}"></div>
+        </div>
+        <p class="hint">Comfort range is not universally fixed — it depends on occupancy type (human, livestock,
+        produce, seed storage, nursery, equipment). Select a profile or enter a custom range.</p>
+        <button class="btn btn-accent btn-sm" id="saveComfortBtn">Save comfort requirement</button>
+      </div>`;
+
+    if (season) {
+      const hours = Array.from({ length: 25 }, (_, i) => i);
+      CH.lineChart(U.qs("#climateChart", root), [
+        { name: "Ambient Temp (°C)", color: "#c93b3b", data: hours.map(h => ({ x: h, y: ENGINE.ambientTempAt(season, h) })) }
+      ], { height: 200, yLabel: "°C", xLabel: "Hour of day" });
+      const solarDiv = document.createElement("div");
+      solarDiv.style.marginTop = "10px";
+      U.qs("#climateChart", root).appendChild(solarDiv);
+      CH.lineChart(solarDiv, [
+        { name: "Solar Irradiance (W/m²)", color: "#d98a12", data: hours.map(h => ({ x: h, y: ENGINE.solarIrradianceAt(season, h) })) }
+      ], { height: 180, yLabel: "W/m²", xLabel: "Hour of day" });
+    }
+
+    U.on("#loadDemoBtn", "click", () => {
+      const key = U.qs("#locSelect", root).value;
+      const seasonKey = U.qs("#seasonSelect", root).value;
+      if (!key) { alert("Select a Ladakh location first."); return; }
+      STORE.loadLadakhDemo(key, seasonKey);
+      window.APP.render();
+    }, root);
+    U.on("#locSelect", "change", () => {
+      const key = U.qs("#locSelect", root).value;
+      if (key) { const opts = Object.keys(DATA.LOCATIONS[key].seasons); U.qs("#seasonSelect", root).innerHTML = opts.map(k => `<option value="${k}">${k}</option>`).join(""); }
+    }, root);
+    U.on("#saveComfortBtn", "click", () => {
+      const profileId = U.qs("#comfortProfile", root).value;
+      const min = parseFloat(U.qs("#comfortMin", root).value);
+      const max = parseFloat(U.qs("#comfortMax", root).value);
+      STORE.updateDesign({ comfort: { profileId, min, max } });
+      window.APP.toast("Comfort requirement saved.");
+    }, root);
+    U.on("#comfortProfile", "change", () => {
+      const p = DATA.COMFORT_PROFILES.find(c => c.id === U.qs("#comfortProfile", root).value);
+      if (p) { U.qs("#comfortMin", root).value = p.min; U.qs("#comfortMax", root).value = p.max; }
+    }, root);
+  };
+
+  const BEARING = { SOUTH: 180, SE: 135, EAST: 90, NE: 45, NORTH: 0, NW: 315, WEST: 270, SW: 225 };
+  function bearingOf(design) {
+    if (design.orientation === "CUSTOM") return (180 + (design.azimuthDeg || 0)) % 360;
+    return BEARING[design.orientation] ?? 180;
+  }
+
+  function drawShelterPreview(container, design, geom) {
+    const size = 260, cx = size / 2, cy = size / 2;
+    const scale = Math.min(180 / Math.max(geom.L, geom.W || geom.L), 6);
+    const w = geom.W ? geom.L * scale : geom.L * scale;
+    const h = geom.W ? geom.W * scale : geom.L * scale;
+    const bearing = bearingOf(design);
+    const isRound = ["CIRCULAR", "DOME", "SEMI_CIRCULAR"].includes(design.shape);
+    let shapeSvg;
+    if (isRound) {
+      shapeSvg = `<circle cx="${cx}" cy="${cy}" r="${w / 2}" fill="#dfeef2" stroke="#1f8a9e" stroke-width="2"/>`;
+    } else {
+      shapeSvg = `<rect x="${cx - w / 2}" y="${cy - h / 2}" width="${w}" height="${h}" fill="#dfeef2" stroke="#1f8a9e" stroke-width="2"/>`;
+    }
+    const winMark = `<rect x="${cx - w * 0.18}" y="${cy - h / 2 - 4}" width="${w * 0.36}" height="8" fill="#2fb8cf"/>`;
+    container.innerHTML = `
+      <svg viewBox="0 0 ${size} ${size}" style="width:260px;height:260px;">
+        <g transform="rotate(${bearing} ${cx} ${cy})">
+          ${shapeSvg}
+          ${winMark}
+        </g>
+        <text x="${cx}" y="14" text-anchor="middle" class="chart-tick" font-size="11">N ↑</text>
+        <text x="${cx}" y="${size - 6}" text-anchor="middle" class="chart-tick" font-size="10">Top-down schematic — illustrative</text>
+      </svg>`;
+  }
+
+  UI.renderDesigner = function (root) {
+    const s = STORE.get();
+    const d = s.design;
+    const geom = ENGINE.computeGeometry(d);
+    const wallOpts = DATA.materialsByCategory("WALL").map(m => `<option value="${m.id}" ${d.wall.materialId === m.id ? "selected" : ""}>${m.name}</option>`).join("");
+    const roofOpts = DATA.materialsByCategory("ROOF").map(m => `<option value="${m.id}" ${d.roof.materialId === m.id ? "selected" : ""}>${m.name}</option>`).join("");
+    const glazeOpts = DATA.materialsByCategory("WINDOW").map(m => `<option value="${m.id}" ${d.windows[0].glazingMaterialId === m.id ? "selected" : ""}>${m.name} (U=${m.uValue}, SHGC=${m.shgc})</option>`).join("");
+
+    root.innerHTML = `
+      <h1>Shelter Designer</h1>
+      <p class="subtitle">Define geometry, orientation, and openings. Preview updates live.</p>
+      <div class="grid grid-2">
+        <div class="card">
+          <fieldset>
+            <legend>Geometry</legend>
+            <div class="form-inline">
+              <div class="form-row"><label>Shape</label>
+                <select id="dShape">
+                  ${["RECTANGULAR","SQUARE","CIRCULAR","DOME","SEMI_CIRCULAR","CUSTOM"].map(v => `<option value="${v}" ${d.shape===v?"selected":""}>${v.replace("_"," ")}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="form-inline" id="rectFields" style="${["CIRCULAR","DOME","SEMI_CIRCULAR"].includes(d.shape)?"display:none;":""}">
+              <div class="form-row"><label>Length (m)</label><input id="dLength" type="number" step="0.1" value="${d.length}"></div>
+              <div class="form-row"><label>Width (m)</label><input id="dWidth" type="number" step="0.1" value="${d.width}"></div>
+              <div class="form-row"><label>Height (m)</label><input id="dHeight" type="number" step="0.1" value="${d.height}"></div>
+            </div>
+            <div class="form-inline" id="roundFields" style="${["CIRCULAR","DOME","SEMI_CIRCULAR"].includes(d.shape)?"":"display:none;"}">
+              <div class="form-row"><label>Diameter (m)</label><input id="dDiameter" type="number" step="0.1" value="${d.diameter || 5}"></div>
+              <div class="form-row"><label>Height (m)</label><input id="dHeight2" type="number" step="0.1" value="${d.height}"></div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Orientation</legend>
+            <div class="form-inline">
+              <div class="form-row"><label>Primary facade orientation</label>
+                <select id="dOrientation">
+                  ${["SOUTH","SE","EAST","NE","NORTH","NW","WEST","SW","CUSTOM"].map(v => `<option value="${v}" ${d.orientation===v?"selected":""}>${v}</option>`).join("")}
+                </select>
+              </div>
+              <div class="form-row" id="azimuthRow" style="${d.orientation==="CUSTOM"?"":"display:none;"}"><label>Custom azimuth (° from South)</label><input id="dAzimuth" type="number" value="${d.azimuthDeg||0}"></div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Openings</legend>
+            <div class="form-inline">
+              <div class="form-row"><label>Window area each (m²)</label><input id="dWinArea" type="number" step="0.1" value="${d.windows[0].areaEach}"></div>
+              <div class="form-row"><label>Window count</label><input id="dWinCount" type="number" value="${d.windows[0].count}"></div>
+              <div class="form-row"><label>Window face</label>
+                <select id="dWinOrient">${["FRONT","BACK","LEFT","RIGHT"].map(v=>`<option ${d.windows[0].orientation===v?"selected":""}>${v}</option>`).join("")}</select>
+              </div>
+            </div>
+            <div class="form-inline">
+              <div class="form-row"><label>Glazing type</label><select id="dGlazing">${glazeOpts}</select></div>
+              <div class="form-row"><label>Door area (m²)</label><input id="dDoorArea" type="number" step="0.1" value="${d.doors[0].areaEach}"></div>
+              <div class="form-row"><label>Air leakage (ACH)</label><input id="dAch" type="number" step="0.1" value="${d.airLeakageAch}"></div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Occupancy &amp; internal gain</legend>
+            <div class="form-inline">
+              <div class="form-row"><label>Occupancy (persons)</label><input id="dOccupancy" type="number" value="${d.occupancy}"></div>
+              <div class="form-row"><label>Internal heat gain (W)</label><input id="dInternal" type="number" value="${d.internalHeatGainW}"></div>
+            </div>
+          </fieldset>
+          <button class="btn btn-accent" id="saveDesignBtn">Save shelter design</button>
+        </div>
+
+        <div>
+          <div class="card" style="text-align:center;">
+            <h3>2D Preview (top-down)</h3>
+            <div id="preview2d"></div>
+          </div>
+          <div class="card" style="margin-top:16px;">
+            <h3>Derived Geometry <span class="tag tag-model">calculated</span></h3>
+            <div class="grid grid-2">
+              <div class="metric-card"><div class="metric-label">Floor Area</div><div class="metric-value" style="font-size:18px;">${geom.floorArea.toFixed(1)} m²</div></div>
+              <div class="metric-card"><div class="metric-label">Volume</div><div class="metric-value" style="font-size:18px;">${geom.volume.toFixed(1)} m³</div></div>
+              <div class="metric-card"><div class="metric-label">Wall Area</div><div class="metric-value" style="font-size:18px;">${geom.wallArea.toFixed(1)} m²</div></div>
+              <div class="metric-card"><div class="metric-label">Roof Area</div><div class="metric-value" style="font-size:18px;">${geom.roofArea.toFixed(1)} m²</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Wall, Roof, Floor Construction &amp; Insulation</h3>
+        <div class="grid grid-3">
+          <fieldset><legend>Wall</legend>
+            <div class="form-row"><label>Material</label><select id="dWallMat">${wallOpts}</select></div>
+            <div class="form-row"><label>Thickness (mm)</label><input id="dWallThick" type="number" value="${d.wall.thicknessMm}"></div>
+            <div class="form-row"><label>Insulation</label><select id="dWallInsMat">${DATA.materialsByCategory("INSULATION").map(m=>`<option value="${m.id}" ${d.wall.insulationMaterialId===m.id?"selected":""}>${m.name}</option>`).join("")}</select></div>
+            <div class="form-row"><label>Insulation thickness (mm)</label><input id="dWallInsThick" type="number" value="${d.wall.insulationThicknessMm}"></div>
+          </fieldset>
+          <fieldset><legend>Roof</legend>
+            <div class="form-row"><label>Material</label><select id="dRoofMat">${roofOpts}</select></div>
+            <div class="form-row"><label>Thickness (mm)</label><input id="dRoofThick" type="number" value="${d.roof.thicknessMm}"></div>
+            <div class="form-row"><label>Insulation</label><select id="dRoofInsMat">${DATA.materialsByCategory("INSULATION").map(m=>`<option value="${m.id}" ${d.roof.insulationMaterialId===m.id?"selected":""}>${m.name}</option>`).join("")}</select></div>
+            <div class="form-row"><label>Insulation thickness (mm)</label><input id="dRoofInsThick" type="number" value="${d.roof.insulationThicknessMm}"></div>
+          </fieldset>
+          <fieldset><legend>Floor &amp; Thermal Mass</legend>
+            <div class="form-row"><label>Floor material</label><select id="dFloorMat">${wallOpts}</select></div>
+            <div class="form-row"><label>Thermal mass material</label><select id="dMassMat">
+              <option value="">None</option>
+              ${DATA.materialsByCategory("THERMAL_MASS").map(m=>`<option value="${m.id}" ${d.thermalMass && d.thermalMass.materialId===m.id?"selected":""}>${m.name}</option>`).join("")}
+            </select></div>
+            <div class="form-row"><label>Thermal mass (kg)</label><input id="dMassKg" type="number" value="${d.thermalMass?d.thermalMass.massKg:0}"></div>
+          </fieldset>
+        </div>
+        <button class="btn btn-accent" id="saveMaterialsBtn">Save construction</button>
+        <span class="hint">U-values (wall ${ENGINE.wallUValue(d).toFixed(2)} W/m²K · roof ${ENGINE.roofUValue(d).toFixed(2)} W/m²K · floor ${ENGINE.floorUValue(d).toFixed(2)} W/m²K) are calculated live from these layers.</span>
+      </div>`;
+
+    drawShelterPreview(U.qs("#preview2d", root), d, geom);
+
+    U.on("#dShape", "change", () => {
+      const v = U.qs("#dShape", root).value;
+      U.qs("#rectFields", root).style.display = ["CIRCULAR","DOME","SEMI_CIRCULAR"].includes(v) ? "none" : "";
+      U.qs("#roundFields", root).style.display = ["CIRCULAR","DOME","SEMI_CIRCULAR"].includes(v) ? "" : "none";
+    }, root);
+    U.on("#dOrientation", "change", () => {
+      U.qs("#azimuthRow", root).style.display = U.qs("#dOrientation", root).value === "CUSTOM" ? "" : "none";
+    }, root);
+
+    U.on("#saveDesignBtn", "click", () => {
+      const shape = U.qs("#dShape", root).value;
+      const patch = {
+        shape,
+        length: parseFloat(U.qs("#dLength", root).value) || d.length,
+        width: parseFloat(U.qs("#dWidth", root).value) || d.width,
+        height: parseFloat((U.qs("#dHeight", root)||U.qs("#dHeight2",root)).value) || d.height,
+        diameter: parseFloat(U.qs("#dDiameter", root) ? U.qs("#dDiameter", root).value : d.diameter) || d.diameter,
+        orientation: U.qs("#dOrientation", root).value,
+        azimuthDeg: parseFloat(U.qs("#dAzimuth", root).value) || 0,
+        airLeakageAch: parseFloat(U.qs("#dAch", root).value),
+        occupancy: parseInt(U.qs("#dOccupancy", root).value) || 0,
+        internalHeatGainW: parseFloat(U.qs("#dInternal", root).value) || 0,
+        windows: [{ areaEach: parseFloat(U.qs("#dWinArea", root).value), count: parseInt(U.qs("#dWinCount", root).value), orientation: U.qs("#dWinOrient", root).value, glazingMaterialId: U.qs("#dGlazing", root).value }],
+        doors: [{ areaEach: parseFloat(U.qs("#dDoorArea", root).value), count: 1 }]
+      };
+      STORE.updateDesign(patch);
+      window.APP.render();
+      window.APP.toast("Shelter design saved.");
+    }, root);
+
+    U.on("#saveMaterialsBtn", "click", () => {
+      const massMatId = U.qs("#dMassMat", root).value;
+      const massKg = parseFloat(U.qs("#dMassKg", root).value) || 0;
+      STORE.updateDesign({
+        wall: { materialId: U.qs("#dWallMat", root).value, thicknessMm: parseFloat(U.qs("#dWallThick", root).value), insulationMaterialId: U.qs("#dWallInsMat", root).value, insulationThicknessMm: parseFloat(U.qs("#dWallInsThick", root).value) },
+        roof: { materialId: U.qs("#dRoofMat", root).value, thicknessMm: parseFloat(U.qs("#dRoofThick", root).value), insulationMaterialId: U.qs("#dRoofInsMat", root).value, insulationThicknessMm: parseFloat(U.qs("#dRoofInsThick", root).value) },
+        floor: { materialId: U.qs("#dFloorMat", root).value, thicknessMm: 100 },
+        thermalMass: massMatId && massKg > 0 ? { materialId: massMatId, massKg, surfaceAreaM2: Math.min(geom.floorArea, massKg / 300) } : null
+      });
+      window.APP.render();
+      window.APP.toast("Construction saved.");
+    }, root);
+  };
+
+  UI.renderMaterials = function (root) {
+    const cats = ["WALL", "ROOF", "INSULATION", "THERMAL_MASS", "WINDOW"];
+    const tableFor = cat => {
+      const rows = DATA.materialsByCategory(cat);
+      const isWindow = cat === "WINDOW", isMass = cat === "THERMAL_MASS";
+      return `<div class="table-wrap"><table><thead><tr>
+          <th>Name</th>${isWindow ? "<th>U-value (W/m²K)</th><th>SHGC</th>" : "<th>Density (kg/m³)</th><th>k (W/mK)</th><th>Cp (J/kgK)</th>"}
+          <th>Absorptivity</th><th>${isMass ? "Cost (₹/kg)" : "Cost (₹/m²)"}</th><th>Sustainability</th>
+        </tr></thead><tbody>
+        ${rows.map(m => `<tr>
+          <td>${U.esc(m.name)}</td>
+          ${isWindow ? `<td class="num">${m.uValue}</td><td class="num">${m.shgc}</td>` : `<td class="num">${m.density||"—"}</td><td class="num">${m.k||"—"}</td><td class="num">${m.cp||"—"}</td>`}
+          <td class="num">${m.absorptivity ?? "—"}</td>
+          <td class="num">${isMass ? (m.costPerKg??"—") : (m.costPerM2??"—")}</td>
+          <td>${m.sustainability}</td>
+        </tr>`).join("")}
+        </tbody></table></div>`;
+    };
+
+    root.innerHTML = `
+      <h1>Material Database</h1>
+      <p class="subtitle"><span class="tag tag-demo">Engineering database value</span> — typical/handbook reference
+      properties. Verify for actual construction/material specification before field use. Values are configurable.</p>
+      ${cats.map(c => `<div class="card" style="margin-bottom:16px;"><h3>${c.replace("_"," ")}</h3>${tableFor(c)}</div>`).join("")}
+
+      <div class="card">
+        <h3>Add Custom Material</h3>
+        <div class="form-inline">
+          <div class="form-row"><label>Category</label><select id="cmCat">${cats.map(c=>`<option value="${c}">${c}</option>`).join("")}</select></div>
+          <div class="form-row"><label>Name</label><input id="cmName" placeholder="e.g. Local yak-wool felt"></div>
+          <div class="form-row"><label>Density (kg/m³)</label><input id="cmDensity" type="number"></div>
+          <div class="form-row"><label>k (W/mK)</label><input id="cmK" type="number" step="0.001"></div>
+          <div class="form-row"><label>Cp (J/kgK)</label><input id="cmCp" type="number"></div>
+        </div>
+        <button class="btn btn-accent btn-sm" id="addMaterialBtn">Add material</button>
+        <span class="hint">Custom materials are marked <b>user-provided</b>, not pre-validated engineering values.</span>
+      </div>`;
+
+    U.on("#addMaterialBtn", "click", () => {
+      const cat = U.qs("#cmCat", root).value, name = U.qs("#cmName", root).value.trim();
+      if (!name) { alert("Enter a material name."); return; }
+      DATA.MATERIALS.push({
+        id: "custom_" + Date.now(), category: cat, name,
+        density: parseFloat(U.qs("#cmDensity", root).value) || null,
+        k: parseFloat(U.qs("#cmK", root).value) || null,
+        cp: parseFloat(U.qs("#cmCp", root).value) || null,
+        absorptivity: 0.6, reflectivity: 0.4, emissivity: 0.9,
+        costPerM2: 1000, costPerKg: 5, sustainability: "MEDIUM", isCustom: true
+      });
+      window.APP.render();
+      window.APP.toast("Custom material added (user-provided — not a validated engineering value).");
+    }, root);
+  };
+})();
+</script>
+
+<script>
+/* AreaTherm UI — Thermal Simulation, Optimization, What-If Analysis */
+window.UI = window.UI || {};
+
+(function () {
+  const DATA = window.APP_DATA, ENGINE = window.APP_ENGINE, STORE = window.APP_STORE, CH = window.APP_CHARTS;
+
+  function matName(id) { const m = DATA.materialById(id); return m ? m.name : id || "—"; }
+
+  function noClimateCard() {
+    return `<div class="card"><p class="subtitle">No climate profile loaded yet. Go to <a href="#/location" style="color:var(--accent);font-weight:600;">Location &amp; Climate</a> and load a location first.</p></div>`;
+  }
+
+  function explainWall(result, design, season) {
+    const geom = result.geometry, u = result.uValues.wall;
+    const coldest = result.series.reduce((a, b) => a.tAmb < b.tAmb ? a : b);
+    const face = geom.faces[0];
+    return `
+      <p><b>Formula</b> (per face, sol-air adjusted):</p>
+      <pre>Q_wall = U_wall × A_wall × (T_indoor − T_sol-air)
+T_sol-air = T_amb + (α × G_face) / h_o</pre>
+      <p><b>Representative hour</b> — coldest ambient timestep in this run (hour ${coldest.hourDecimal.toFixed(1)}):</p>
+      <pre>U_wall        = ${u.toFixed(3)} W/m²K   (from wall + insulation layers, see Materials)
+Total wall area = ${geom.wallArea.toFixed(1)} m²
+T_amb         = ${coldest.tAmb} °C
+T_indoor      = ${coldest.tIndoor} °C
+G (horizontal)= ${coldest.gHoriz} W/m²
+α (wall)      = ${(DATA.materialById(design.wall.materialId)||{}).absorptivity ?? 0.6}
+h_o           = 23 W/m²K
+
+T_sol-air (front face, factor ${face.factor.toFixed(2)}) = ${coldest.tAmb} + (${(DATA.materialById(design.wall.materialId)||{}).absorptivity ?? 0.6} × ${(coldest.gHoriz*face.factor).toFixed(1)}) / 23
+            ≈ ${(coldest.tAmb + ((DATA.materialById(design.wall.materialId)||{}).absorptivity ?? 0.6) * coldest.gHoriz*face.factor / 23).toFixed(2)} °C
+
+Q_wall (all faces, this hour) = ${coldest.qWall} W</pre>
+      <p class="hint">Positive Q = heat leaving the shelter through the walls at this timestep.</p>`;
+  }
+  function explainRoof(result, design) {
+    const geom = result.geometry, u = result.uValues.roof;
+    const coldest = result.series.reduce((a, b) => a.tAmb < b.tAmb ? a : b);
+    return `<pre>Q_roof = U_roof × A_roof × (T_indoor − T_sol-air,roof)
+
+U_roof = ${u.toFixed(3)} W/m²K
+A_roof = ${geom.roofArea.toFixed(1)} m²
+T_indoor = ${coldest.tIndoor} °C,  T_amb = ${coldest.tAmb} °C,  G = ${coldest.gHoriz} W/m²
+
+Q_roof (this hour) = ${coldest.qRoof} W</pre>`;
+  }
+  function explainFloor(result, design) {
+    const geom = result.geometry, u = result.uValues.floor;
+    const coldest = result.series.reduce((a, b) => a.tAmb < b.tAmb ? a : b);
+    return `<pre>Q_floor = U_floor × A_floor × (T_indoor − T_ground)
+
+U_floor = ${u.toFixed(3)} W/m²K  (assumption: ground contact resistance 0.5 m²K/W + floor layer)
+A_floor = ${geom.floorArea.toFixed(1)} m²
+T_indoor = ${coldest.tIndoor} °C
+
+Q_floor (this hour) = ${coldest.qFloor} W</pre>`;
+  }
+  function explainSolar(result, design) {
+    const peakSun = result.series.reduce((a, b) => a.gHoriz > b.gHoriz ? a : b);
+    const w = design.windows[0];
+    const shgc = (DATA.materialById(w.glazingMaterialId) || {}).shgc || 0.7;
+    return `<pre>Q_solar,window = A_window × G × orientation_factor × SHGC
+
+A_window (total) = ${result.windowArea.toFixed(2)} m²
+G (peak-sun hour, ${peakSun.hourDecimal.toFixed(1)}h) = ${peakSun.gHoriz} W/m²
+orientation_factor (front face) = ${result.geometry.faces[0].factor.toFixed(2)}
+SHGC (${matNameLocal(w.glazingMaterialId)}) = ${shgc}
+
+Q_solar,window ≈ ${result.windowArea.toFixed(2)} × ${peakSun.gHoriz} × ${result.geometry.faces[0].factor.toFixed(2)} × ${shgc}
+            = ${peakSun.qSolarWindow} W  (at this hour)
+
+Daily total (integrated over all daylight hours) = ${result.daily.solarKwh} kWh/day</pre>
+      <p class="hint">Opaque-surface solar gain (through walls/roof) is folded into the sol-air conduction terms — see Explain Calculation on Wall/Roof Loss.</p>`;
+  }
+  function matNameLocal(id) { const m = DATA.materialById(id); return m ? m.name : id; }
+
+  function explainOpening(result, design) {
+    const coldest = result.series.reduce((a, b) => a.tAmb < b.tAmb ? a : b);
+    const peakSun = result.series.reduce((a, b) => a.gHoriz > b.gHoriz ? a : b);
+    const w = design.windows[0];
+    return `<pre>Conduction:  Q_window,cond = U_window × A_window × (T_indoor − T_amb)
+Solar gain:  Q_solar,window = A_window × G × orientation_factor × SHGC
+
+U_window = ${ENGINE.windowUValue(w).toFixed(2)} W/m²K,  SHGC = ${(DATA.materialById(w.glazingMaterialId)||{}).shgc}
+A_window (total) = ${result.windowArea.toFixed(2)} m²
+
+At coldest hour: T_indoor=${coldest.tIndoor}°C, T_amb=${coldest.tAmb}°C → Q_window,cond ≈ ${coldest.qWindowCond} W
+At peak-sun hour (${peakSun.hourDecimal.toFixed(1)}h): G=${peakSun.gHoriz} W/m² → Q_solar,window ≈ ${peakSun.qSolarWindow} W</pre>`;
+  }
+  function explainVent(result, design) {
+    const coldest = result.series.reduce((a, b) => a.tAmb < b.tAmb ? a : b);
+    return `<pre>Q_vent = ACH × Volume / 3600 × ρ_air × Cp_air × (T_indoor − T_amb)
+
+ACH (wind-adjusted) ≈ ${design.airLeakageAch}
+Volume = ${result.geometry.volume.toFixed(1)} m³
+ρ_air = 1.2 kg/m³,  Cp_air = 1005 J/kgK
+T_indoor=${coldest.tIndoor}°C, T_amb=${coldest.tAmb}°C
+
+Q_vent (this hour) = ${coldest.qVent} W</pre>`;
+  }
+  function explainMass(result, design) {
+    if (!design.thermalMass) return `<p>No thermal mass configured in this design.</p>`;
+    const peakSun = result.series.reduce((a, b) => a.gHoriz > b.gHoriz ? a : b);
+    const mat = DATA.materialById(design.thermalMass.materialId);
+    return `<pre>Q_exchange = h_mass × A_mass × (T_indoor − T_mass)
+C_mass × dT_mass/dt = Q_exchange + f_solar_to_mass × Q_solar,window
+
+Material: ${mat.name},  mass = ${design.thermalMass.massKg} kg,  Cp = ${mat.cp} J/kgK
+h_mass = 8 W/m²K,  A_mass = ${design.thermalMass.surfaceAreaM2} m²
+
+At hour ${peakSun.hourDecimal.toFixed(1)} (peak solar): T_indoor=${peakSun.tIndoor}°C, T_mass=${peakSun.tMass}°C
+Q_exchange ≈ ${peakSun.qMassExchange} W  (positive = mass absorbing heat from air)</pre>`;
+  }
+  function explainScore(result) {
+    return `<pre>Thermal Comfort Score = 0.45×ComfortHours% + 0.25×HeatRetention% + 0.20×SolarUtilization% + 0.10×EnergyAdequacy
+
+ComfortHours%   = 0.5×Daytime(${result.comfort.dayComfortPct}%) + 0.5×Night(${result.comfort.nightComfortPct}%) = ${result.scores.comfortScore}%
+HeatRetention%  = ${result.scores.heatRetentionPct}%
+SolarUtilization% = ${result.scores.solarUtilizationPct}%
+
+Thermal Comfort Score = ${result.scores.thermalComfortScore} / 100</pre>
+      <p class="hint">Weights are configurable in Settings / Optimization.</p>`;
+  }
+
+  function explainBtn(label) {
+    return `<span class="explain-link" data-explain="${label}">Explain calculation →</span>`;
+  }
+
+  function wireExplainButtons(root, result, design, season) {
+    const map = {
+      solar: () => explainSolar(result, design),
+      wall: () => explainWall(result, design, season), roof: () => explainRoof(result, design),
+      floor: () => explainFloor(result, design), opening: () => explainOpening(result, design),
+      vent: () => explainVent(result, design), mass: () => explainMass(result, design),
+      score: () => explainScore(result)
+    };
+    U.qsa("[data-explain]", root).forEach(elm => {
+      elm.addEventListener("click", () => window.APP.showExplain(elm.textContent.replace(" →", "") + " — " + elm.dataset.explain, map[elm.dataset.explain]()));
+    });
+  }
+
+  UI.renderSimulation = function (root) {
+    const s = STORE.get();
+    const season = STORE.currentSeason();
+    if (!season) { root.innerHTML = `<h1>Thermal Simulation</h1>` + noClimateCard(); return; }
+
+    const result = s.lastSimulationResult;
+    root.innerHTML = `
+      <h1>Thermal Simulation</h1>
+      <p class="subtitle">Hourly physics-based energy balance for <b>${U.esc(s.location.label)}</b> — ${U.esc(s.seasonKey)} <span class="tag tag-demo">demo climate</span></p>
+      <div class="card">
+        <div class="form-inline">
+          <div class="form-row"><label>Time step</label>
+            <select id="simStep">${[15,30,60].map(v=>`<option value="${v}" ${s.simConfig.timeStepMinutes===v?"selected":""}>${v} min</option>`).join("")}</select>
+          </div>
+          <div class="form-row"><label>Period</label>
+            <select id="simPeriod">
+              <option value="24H" ${s.simConfig.periodType==="24H"?"selected":""}>24 hours</option>
+              <option value="7D" ${s.simConfig.periodType==="7D"?"selected":""}>7 days</option>
+              <option value="30D" ${s.simConfig.periodType==="30D"?"selected":""}>30 days</option>
+            </select>
+          </div>
+          <div class="form-row" style="align-self:flex-end;"><button class="btn btn-accent" id="runSimBtn">▶ Run Thermal Simulation</button></div>
+        </div>
+      </div>
+
+      ${result ? `
+      <div class="grid grid-4" style="margin:16px 0;">
+        <div class="metric-card card"><div class="metric-label">Predicted Indoor Temp</div><div class="metric-value" style="font-size:18px;">${result.comfort.minIndoor} – ${result.comfort.maxIndoor} °C</div><div class="metric-sub">Model Prediction</div></div>
+        <div class="metric-card card"><div class="metric-label">Solar Heat Gain</div><div class="metric-value" style="font-size:18px;">${result.daily.solarKwh} kWh/day</div></div>
+        <div class="metric-card card"><div class="metric-label">Total Heat Loss</div><div class="metric-value" style="font-size:18px;">${result.daily.totalLossKwh} kWh/day</div></div>
+        <div class="metric-card card"><div class="metric-label">Comfort Duration</div><div class="metric-value" style="font-size:18px;">${result.comfort.comfortHoursPerDay} h/day</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Indoor vs Ambient Temperature vs Comfort Range</h3>
+        <div id="tempChart"></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Heat Flow Analysis (daily totals)</h3>
+          <div id="heatFlowDiv"></div>
+        </div>
+        <div class="card">
+          <h3>Heat Balance Detail <span class="tag tag-model">model prediction</span></h3>
+          <table>
+            <tr><td>Solar thermal energy received</td><td class="num">${result.daily.solarKwh} kWh/day</td><td>${explainBtn("solar")}</td></tr>
+            <tr><td>Heat loss — walls</td><td class="num">${result.daily.wallLossKwh} kWh/day</td><td>${explainBtn("wall")}</td></tr>
+            <tr><td>Heat loss — roof</td><td class="num">${result.daily.roofLossKwh} kWh/day</td><td>${explainBtn("roof")}</td></tr>
+            <tr><td>Heat loss — floor</td><td class="num">${result.daily.floorLossKwh} kWh/day</td><td>${explainBtn("floor")}</td></tr>
+            <tr><td>Heat loss — openings</td><td class="num">${result.daily.openingLossKwh} kWh/day</td><td>${explainBtn("opening")}</td></tr>
+            <tr><td>Ventilation / infiltration loss</td><td class="num">${result.daily.ventLossKwh} kWh/day</td><td>${explainBtn("vent")}</td></tr>
+            <tr><td>Thermal mass exchange</td><td class="num">${result.daily.massExchangeKwh} kWh/day</td><td>${explainBtn("mass")}</td></tr>
+            <tr><td>Heating requirement</td><td class="num">${result.daily.heatingReqKwh} kWh/day</td><td></td></tr>
+            <tr><td>Cooling requirement</td><td class="num">${result.daily.coolingReqKwh} kWh/day</td><td></td></tr>
+            <tr style="font-weight:700;"><td>Net energy balance</td><td class="num">${result.daily.netKwh} kWh/day</td><td></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3>Thermal Comfort Score ${explainBtn("score")}</h3>
+        <div style="display:flex; align-items:center; gap:22px;">
+          <div id="simGauge"></div>
+          <ul class="checklist">
+            <li>Daytime comfort: <b>${result.comfort.dayComfortPct}%</b></li>
+            <li>Night comfort: <b>${result.comfort.nightComfortPct}%</b></li>
+            <li>Solar utilization: <b>${result.scores.solarUtilizationPct}%</b></li>
+            <li>Heat retention: <b>${result.scores.heatRetentionPct}%</b></li>
+          </ul>
+        </div>
+      </div>
+      ` : `<div class="card"><p class="subtitle">Run the simulation to see predicted indoor temperature, solar gain, heat losses, and comfort duration.</p></div>`}
+    `;
+
+    if (result) {
+      const dt = s.simConfig.timeStepMinutes / 60;
+      CH.lineChart(U.qs("#tempChart", root), [
+        { name: "Indoor Temp", color: "#1f8a9e", data: result.series.map(pt => ({ x: pt.stepIndex * dt, y: pt.tIndoor })) },
+        { name: "Ambient Temp", color: "#c93b3b", data: result.series.map(pt => ({ x: pt.stepIndex * dt, y: pt.tAmb })) }
+      ], { height: 260, yLabel: "°C", xLabel: "Hours from simulation start", comfortBand: { min: s.design.comfort.min, max: s.design.comfort.max } });
+      CH.heatFlowDiagram(U.qs("#heatFlowDiv", root), result.daily);
+      CH.scoreGauge(U.qs("#simGauge", root), result.scores.thermalComfortScore);
+      wireExplainButtons(root, result, s.design, season);
+    }
+
+    U.on("#runSimBtn", "click", () => {
+      const timeStepMinutes = parseInt(U.qs("#simStep", root).value);
+      const periodType = U.qs("#simPeriod", root).value;
+      const days = periodType === "24H" ? 1 : periodType === "7D" ? 7 : 30;
+      STORE.get().simConfig = { timeStepMinutes, periodType, days };
+      const res = ENGINE.runSimulation(STORE.get().design, season, STORE.get().simConfig);
+      STORE.recordSimulation(res);
+      window.APP.render();
+      window.APP.toast("Simulation complete.");
+    }, root);
+  };
+
+  UI.renderOptimization = function (root) {
+    const s = STORE.get();
+    const season = STORE.currentSeason();
+    if (!season) { root.innerHTML = `<h1>Design Optimization</h1>` + noClimateCard(); return; }
+    const w = s.weights;
+    const opt = s.lastOptimizationResult;
+
+    const weightRow = (key, label) => `
+      <div class="form-row"><label>${label} (${Math.round(w[key]*100)}%)</label>
+        <input type="range" min="0" max="100" value="${Math.round(w[key]*100)}" data-weight="${key}"></div>`;
+
+    root.innerHTML = `
+      <h1>Design Optimization Engine</h1>
+      <p class="subtitle">Generates candidate shelter configurations across orientation, insulation, glazing, window
+      area, and thermal mass — scores each with a configurable weighted multi-criteria formula.</p>
+
+      <div class="card">
+        <h3>Scoring Weights (must total 100%)</h3>
+        <div class="grid grid-3">
+          ${weightRow("comfort", "Thermal Comfort")}
+          ${weightRow("retention", "Heat Retention")}
+          ${weightRow("solar", "Solar Utilization")}
+          ${weightRow("energy", "Energy Efficiency")}
+          ${weightRow("cost", "Cost")}
+        </div>
+        <div id="weightTotal" class="hint"></div>
+        <button class="btn btn-accent" id="runOptBtn" style="margin-top:10px;">▶ Run Design Optimization</button>
+      </div>
+
+      ${opt ? `
+      <div class="card" style="margin:16px 0;">
+        <h3>Candidate Designs <span class="tag tag-model">${opt.candidatesEvaluated} configurations evaluated</span></h3>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Design</th><th>Orientation</th><th>Insulation</th><th>Window %</th><th>Glazing</th><th>Thermal Mass</th>
+          <th>Comfort</th><th>Retention</th><th>Solar</th><th>Energy</th><th>Cost</th><th>Total Score</th>
+        </tr></thead><tbody>
+          ${opt.top.map(c => `<tr class="${c.isRecommended ? "highlight-recommended" : ""}">
+            <td><b>${c.label}</b>${c.isRecommended ? " ★" : ""}</td>
+            <td>${c.params.orient}</td><td>${c.params.insul} mm</td><td>${Math.round(c.params.wpct*100)}%</td>
+            <td>${matName(c.params.glz)}</td><td>${c.params.mass} kg</td>
+            <td class="num">${c.score.comfort.toFixed(0)}</td><td class="num">${c.score.retention.toFixed(0)}</td>
+            <td class="num">${c.score.solar.toFixed(0)}</td><td class="num">${c.score.energyScore.toFixed(0)}</td>
+            <td class="num">${c.score.costScore.toFixed(0)}</td><td class="num"><b>${c.score.total.toFixed(1)}</b></td>
+          </tr>`).join("")}
+        </tbody></table></div>
+      </div>
+
+      <div class="recommend-panel" style="margin-bottom:16px;">
+        <h2 style="margin-bottom:0;">✅ Recommended Shelter Design — Design ${opt.recommended.label} <span class="tag tag-model">Model Prediction</span></h2>
+        <div class="recommend-grid">
+          <div class="recommend-item"><div class="k">Orientation</div><div class="v">${opt.recommended.params.orient}-facing</div></div>
+          <div class="recommend-item"><div class="k">Dimensions</div><div class="v">${opt.recommended.design.length}m × ${opt.recommended.design.width}m × ${opt.recommended.design.height}m</div></div>
+          <div class="recommend-item"><div class="k">Wall</div><div class="v">${matName(opt.recommended.design.wall.materialId)}</div></div>
+          <div class="recommend-item"><div class="k">Insulation</div><div class="v">${opt.recommended.params.insul} mm</div></div>
+          <div class="recommend-item"><div class="k">Roof</div><div class="v">${matName(opt.recommended.design.roof.materialId)}</div></div>
+          <div class="recommend-item"><div class="k">Windows</div><div class="v">${matName(opt.recommended.params.glz)}, ${Math.round(opt.recommended.params.wpct*100)}% of wall area</div></div>
+          <div class="recommend-item"><div class="k">Thermal mass</div><div class="v">${opt.recommended.params.mass > 0 ? matName(opt.recommended.design.thermalMass.materialId) + " (" + opt.recommended.params.mass + " kg)" : "None"}</div></div>
+          <div class="recommend-item"><div class="k">Comfort duration</div><div class="v">${opt.recommended.result.comfort.comfortHoursPerDay} h/day</div></div>
+          <div class="recommend-item"><div class="k">Predicted temp range</div><div class="v">${opt.recommended.result.comfort.minIndoor}–${opt.recommended.result.comfort.maxIndoor} °C</div></div>
+          <div class="recommend-item"><div class="k">Solar utilization</div><div class="v">${opt.recommended.result.scores.solarUtilizationPct}%</div></div>
+          <div class="recommend-item"><div class="k">Heat loss</div><div class="v">${opt.recommended.result.daily.totalLossKwh} kWh/day</div></div>
+          <div class="recommend-item"><div class="k">Thermal performance score</div><div class="v">${opt.recommended.score.total.toFixed(0)}/100</div></div>
+        </div>
+        <p class="hint" style="margin-top:10px;">Estimated cost: ₹${opt.recommended.cost.toLocaleString("en-IN")} (materials-based estimate, model prediction — verify with local quotations).</p>
+        <button class="btn btn-accent btn-sm" id="adoptRecommendedBtn" style="margin-top:6px;">Adopt as current shelter design</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Design Comparison</h3>
+        <div class="table-wrap"><table><thead><tr><th>Parameter</th>${opt.top.map(c=>`<th>Design ${c.label}${c.isRecommended?" (Recommended)":""}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${[
+            ["Floor area (m²)", c=>c.result.geometry.floorArea.toFixed(1)],
+            ["Volume (m³)", c=>c.result.geometry.volume.toFixed(1)],
+            ["Wall material", c=>matName(c.design.wall.materialId)],
+            ["Roof material", c=>matName(c.design.roof.materialId)],
+            ["Insulation (mm)", c=>c.params.insul],
+            ["Window area (%)", c=>Math.round(c.params.wpct*100)+"%"],
+            ["Orientation", c=>c.params.orient],
+            ["Solar gain (kWh/day)", c=>c.result.daily.solarKwh],
+            ["Heat loss (kWh/day)", c=>c.result.daily.totalLossKwh],
+            ["Min indoor temp (°C)", c=>c.result.comfort.minIndoor],
+            ["Max indoor temp (°C)", c=>c.result.comfort.maxIndoor],
+            ["Comfort hours/day", c=>c.result.comfort.comfortHoursPerDay],
+            ["Energy requirement (kWh/day)", c=>(c.result.daily.heatingReqKwh+c.result.daily.coolingReqKwh).toFixed(2)],
+            ["Thermal score", c=>c.score.total.toFixed(1)],
+            ["Estimated cost (₹)", c=>c.cost.toLocaleString("en-IN")]
+          ].map(([label, fn]) => `<tr><td>${label}</td>${opt.top.map(c=>`<td class="num ${c.isRecommended?"highlight-recommended":""}">${fn(c)}</td>`).join("")}</tr>`).join("")}
+        </tbody></table></div>
+      </div>
+
+      <div class="card">
+        <h3>Sensitivity Analysis <span class="tag tag-model">from current baseline design</span></h3>
+        <p class="hint">Impact on thermal score (Δ points) when each parameter is improved from the current baseline design.</p>
+        <div id="sensChart"></div>
+      </div>
+      ` : `<div class="card" style="margin-top:16px;"><p class="subtitle">Run optimization to generate and compare candidate designs.</p></div>`}
+    `;
+
+    function refreshWeightTotal() {
+      const total = ["comfort","retention","solar","energy","cost"].reduce((a,k)=>a+w[k]*100,0);
+      U.qs("#weightTotal", root).textContent = `Current total: ${Math.round(total)}%` + (Math.round(total) !== 100 ? "  (will be normalized on run)" : "");
+    }
+    refreshWeightTotal();
+    U.qsa("[data-weight]", root).forEach(inp => inp.addEventListener("input", () => {
+      w[inp.dataset.weight] = parseInt(inp.value) / 100;
+      refreshWeightTotal();
+    }));
+
+    if (opt) {
+      const sens = ENGINE.sensitivityAnalysis(s.design, season, s.simConfig, normalizedWeights(w));
+      CH.barChart(U.qs("#sensChart", root), sens.impacts.map(i => ({ label: i.parameter, value: i.deltaScore })));
+      U.on("#adoptRecommendedBtn", "click", () => {
+        STORE.updateDesign(opt.recommended.design);
+        window.APP.toast("Recommended design adopted as current shelter design.");
+        window.APP.navigate("designer");
+      }, root);
+    }
+
+    U.on("#runOptBtn", "click", () => {
+      const nw = normalizedWeights(w);
+      s.weights = nw;
+      const result = ENGINE.runOptimization(s.design, season, s.simConfig, nw);
+      STORE.recordOptimization(result);
+      window.APP.render();
+      window.APP.toast(`Optimization complete — ${result.candidatesEvaluated} candidates evaluated.`);
+    }, root);
+  };
+
+  function normalizedWeights(w) {
+    const total = ["comfort","retention","solar","energy","cost"].reduce((a,k)=>a+w[k],0) || 1;
+    const out = {};
+    ["comfort","retention","solar","energy","cost"].forEach(k => out[k] = w[k] / total);
+    return out;
+  }
+
+  const WHATIF_PRESETS = {
+    insulation: { label: "Increase insulation 50mm → 100mm", apply: d => { d.wall.insulationThicknessMm = 100; d.roof.insulationThicknessMm = 100; } },
+    window: { label: "Increase window area 10% → 20% of wall area", apply: d => { const geom = ENGINE.computeGeometry(d); d.windows[0].areaEach = geom.wallArea * 0.20; } },
+    orientation: { label: "Change orientation East → South", apply: d => { d.orientation = "SOUTH"; d.azimuthDeg = 0; } },
+    mass: { label: "Add thermal mass (800 kg stone)", apply: d => { d.thermalMass = { materialId: "mass_stone", massKg: 800, surfaceAreaM2: 6 }; } },
+    roof: { label: "Change roof to insulated composite roof", apply: d => { d.roof.materialId = "roof_composite"; } }
+  };
+
+  UI.renderWhatIf = function (root) {
+    const s = STORE.get();
+    const season = STORE.currentSeason();
+    if (!season) { root.innerHTML = `<h1>What-If Analysis</h1>` + noClimateCard(); return; }
+
+    root.innerHTML = `
+      <h1>What-If Analysis</h1>
+      <p class="subtitle">Compare the current baseline design against a single-parameter change.</p>
+      <div class="card">
+        <div class="form-row"><label>Scenario</label>
+          <select id="whatifPreset">${Object.entries(WHATIF_PRESETS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("")}</select>
+        </div>
+        <button class="btn btn-accent" id="runWhatifBtn">▶ Run What-If Comparison</button>
+      </div>
+      <div id="whatifResults"></div>
+    `;
+
+    U.on("#runWhatifBtn", "click", () => {
+      const key = U.qs("#whatifPreset", root).value;
+      const preset = WHATIF_PRESETS[key];
+      const before = JSON.parse(JSON.stringify(s.design));
+      const after = JSON.parse(JSON.stringify(s.design));
+      preset.apply(after);
+      const beforeRes = ENGINE.runSimulation(before, season, s.simConfig);
+      const afterRes = ENGINE.runSimulation(after, season, s.simConfig);
+
+      const wrap = U.qs("#whatifResults", root);
+      wrap.innerHTML = `
+        <div class="card" style="margin-top:16px;">
+          <h3>${preset.label}</h3>
+          <div class="grid grid-4">
+            ${[
+              ["Comfort hours/day", beforeRes.comfort.comfortHoursPerDay, afterRes.comfort.comfortHoursPerDay, ""],
+              ["Total heat loss (kWh/day)", beforeRes.daily.totalLossKwh, afterRes.daily.totalLossKwh, ""],
+              ["Solar gain (kWh/day)", beforeRes.daily.solarKwh, afterRes.daily.solarKwh, ""],
+              ["Thermal score", beforeRes.scores.thermalComfortScore, afterRes.scores.thermalComfortScore, ""]
+            ].map(([label,b,a]) => `<div class="metric-card card">
+                <div class="metric-label">${label}</div>
+                <div class="metric-value" style="font-size:16px;">${b} → ${a}</div>
+                <div class="metric-sub" style="color:${a>=b?'var(--good)':'var(--bad)'}">${a>=b?"+":""}${(a-b).toFixed(2)}</div>
+              </div>`).join("")}
+          </div>
+          <h3 style="margin-top:14px;">Indoor Temperature — Before vs After</h3>
+          <div id="whatifChart"></div>
+        </div>`;
+      const dt = s.simConfig.timeStepMinutes / 60;
+      CH.lineChart(U.qs("#whatifChart", wrap), [
+        { name: "Before", color: "#8b98a6", data: beforeRes.series.map(pt => ({ x: pt.stepIndex*dt, y: pt.tIndoor })) },
+        { name: "After", color: "#1f8a9e", data: afterRes.series.map(pt => ({ x: pt.stepIndex*dt, y: pt.tIndoor })) }
+      ], { height: 240, yLabel: "°C", xLabel: "Hours", comfortBand: { min: s.design.comfort.min, max: s.design.comfort.max } });
+    }, root);
+  };
+})();
+</script>
+
+<script>
+/* AreaTherm UI — Validation, Reports, Evaluator Summary, Settings */
+window.UI = window.UI || {};
+
+(function () {
+  const DATA = window.APP_DATA, ENGINE = window.APP_ENGINE, STORE = window.APP_STORE, CH = window.APP_CHARTS, CFG = window.APP_CONFIG;
+  function matName(id) { const m = DATA.materialById(id); return m ? m.name : id || "—"; }
+
+  function predictSteadyState(design, ambientC, solarWm2) {
+    const geom = ENGINE.computeGeometry(design);
+    const uWall = ENGINE.wallUValue(design), uRoof = ENGINE.roofUValue(design), uFloor = ENGINE.floorUValue(design);
+    const win = design.windows[0];
+    const uWin = ENGINE.windowUValue(win);
+    const shgc = (DATA.materialById(win.glazingMaterialId) || {}).shgc || 0.7;
+    const windowArea = (win.areaEach || 0) * (win.count || 0);
+    const ventUA = (design.airLeakageAch * geom.volume / 3600) * 1.2 * 1005;
+    const UA = uWall * geom.wallArea + uRoof * geom.roofArea + uFloor * geom.floorArea + uWin * windowArea + ventUA;
+    const solarGain = windowArea * solarWm2 * 0.85 * shgc + (design.internalHeatGainW || 0);
+    return ambientC + solarGain / UA;
+  }
+
+  let validationRows = [
+    { hour: 8, ambient: -6, solar: 120, wind: 2, rh: 35, measured: 4 },
+    { hour: 12, ambient: 2, solar: 620, wind: 2.4, rh: 30, measured: 13 },
+    { hour: 16, ambient: -1, solar: 240, wind: 2.1, rh: 32, measured: 9 },
+    { hour: 20, ambient: -9, solar: 0, wind: 1.8, rh: 38, measured: 1 }
+  ];
+
+  UI.renderValidation = function (root) {
+    const s = STORE.get();
+
+    root.innerHTML = `
+      <h1>Model Validation</h1>
+      <p class="subtitle"><span class="tag tag-field">user-provided</span> Enter measured field data (from an actual
+      instrumented shelter) to compare against the model's prediction. No field measurements exist for this prototype —
+      the rows below are editable placeholders you can overwrite. Requires field validation before use in a real
+      engineering decision.</p>
+
+      <div class="card">
+        <h3>Measured Data Points</h3>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Hour of day</th><th>Ambient (°C)</th><th>Solar (W/m²)</th><th>Wind (m/s)</th><th>RH (%)</th><th>Measured Indoor (°C)</th><th></th>
+        </tr></thead><tbody id="valRows">
+          ${validationRows.map((r, i) => `<tr data-i="${i}">
+            <td><input type="number" step="0.5" value="${r.hour}" data-f="hour" style="width:70px;"></td>
+            <td><input type="number" value="${r.ambient}" data-f="ambient" style="width:70px;"></td>
+            <td><input type="number" value="${r.solar}" data-f="solar" style="width:80px;"></td>
+            <td><input type="number" step="0.1" value="${r.wind}" data-f="wind" style="width:60px;"></td>
+            <td><input type="number" value="${r.rh}" data-f="rh" style="width:60px;"></td>
+            <td><input type="number" step="0.1" value="${r.measured}" data-f="measured" style="width:70px;"></td>
+            <td><button class="btn btn-sm" data-remove="${i}">✕</button></td>
+          </tr>`).join("")}
+        </tbody></table></div>
+        <button class="btn btn-sm" id="addRowBtn" style="margin-top:8px;">+ Add row</button>
+        <button class="btn btn-accent" id="runValidationBtn" style="margin-left:8px;">Compare Measured vs Predicted</button>
+        <p class="hint">Predicted values use a steady-state point-balance approximation (Q_solar + Q_internal = UA × ΔT)
+        against the current shelter design — a simplification for point-in-time validation, documented as an assumption.
+        Full transient validation requires continuous time-aligned field logging (future integration).</p>
+      </div>
+
+      <div id="validationResults"></div>
+    `;
+
+    function bindRows() {
+      U.qsa("#valRows input", root).forEach(inp => inp.addEventListener("change", () => {
+        const i = parseInt(inp.closest("tr").dataset.i);
+        validationRows[i][inp.dataset.f] = parseFloat(inp.value);
+      }));
+      U.qsa("[data-remove]", root).forEach(btn => btn.addEventListener("click", () => {
+        validationRows.splice(parseInt(btn.dataset.remove), 1);
+        window.APP.render();
+      }));
+    }
+    bindRows();
+
+    U.on("#addRowBtn", "click", () => {
+      validationRows.push({ hour: 12, ambient: 0, solar: 300, wind: 2, rh: 30, measured: 10 });
+      window.APP.render();
+    }, root);
+
+    U.on("#runValidationBtn", "click", () => {
+      const points = validationRows.map(r => ({
+        ...r, predicted: Math.round(predictSteadyState(s.design, r.ambient, r.solar) * 100) / 100
+      }));
+      const stats = ENGINE.validationStats(points.map(p => ({ measured: p.measured, predicted: p.predicted })));
+      STORE.addValidationDataset({ id: "VAL-" + Date.now(), ts: new Date().toISOString(), points, stats });
+
+      const wrap = U.qs("#validationResults", root);
+      wrap.innerHTML = `
+        <div class="card" style="margin-top:16px;">
+          <h3>Error Metrics <span class="tag tag-model">model prediction vs user-provided measurement</span></h3>
+          <div class="grid grid-4">
+            <div class="metric-card card"><div class="metric-label">MAE</div><div class="metric-value">${stats.mae}</div><div class="metric-sub">°C</div></div>
+            <div class="metric-card card"><div class="metric-label">RMSE</div><div class="metric-value">${stats.rmse}</div><div class="metric-sub">°C</div></div>
+            <div class="metric-card card"><div class="metric-label">MAPE</div><div class="metric-value">${stats.mape}</div><div class="metric-sub">%</div></div>
+            <div class="metric-card card"><div class="metric-label">R²</div><div class="metric-value">${stats.r2 ?? "—"}</div><div class="metric-sub">n = ${stats.n}</div></div>
+          </div>
+          <h3 style="margin-top:14px;">Measured vs Predicted</h3>
+          <div id="valScatter" style="max-width:440px;"></div>
+        </div>`;
+      CH.scatterChart(U.qs("#valScatter", wrap), points.map(p => ({ x: p.measured, y: p.predicted })), { xLabel: "Measured Indoor (°C)", yLabel: "Predicted Indoor (°C)" });
+    }, root);
+  };
+
+  UI.renderReport = function (root) {
+    const s = STORE.get();
+    const result = s.lastSimulationResult;
+    const opt = s.lastOptimizationResult;
+    const season = STORE.currentSeason();
+    const now = new Date();
+    const simId = "SIM-" + now.getTime();
+
+    root.innerHTML = `
+      <div class="card" style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+        <div><b>Engineering Report</b> — printable / exportable to PDF via your browser's print dialog.</div>
+        <button class="btn btn-accent" id="printBtn">🖨 Print / Save as PDF</button>
+      </div>
+      <div class="card" id="reportDoc" style="line-height:1.7;">
+        <h1 style="text-align:center;">Area-Specific Passive Shelter Thermal Performance &amp; Design Optimization Report</h1>
+        <p style="text-align:center;color:var(--text-muted);">Generated: ${now.toLocaleString()} &nbsp;|&nbsp; Model version: ${CFG.MODEL_VERSION} &nbsp;|&nbsp; Simulation ID: ${simId}</p>
+        <hr/>
+        <h3>1–2. Project &amp; Location</h3>
+        <p>Project: <b>${U.esc(s.project.name)}</b><br/>
+        Location: <b>${s.location ? U.esc(s.location.label) : "Not set"}</b>
+        ${s.location ? `(Lat ${s.location.latitude}, Lon ${s.location.longitude}, Elevation ${s.location.elevationM} m)` : ""}
+        ${s.climateSource ? `<span class="tag tag-demo">${U.esc(s.climateSource.label)}</span>` : ""}</p>
+
+        <h3>3. Climate Inputs (${s.seasonKey || "—"})</h3>
+        ${season ? `<p>Ambient temperature: ${season.tMin} to ${season.tMax} °C · Solar irradiance: ${season.solarKwhDay} kWh/m²/day ·
+        Sunshine window: ${season.sunrise}h–${season.sunset}h · Wind: ${season.windMs} m/s · RH: ${season.rhPct}% · Cloud cover: ${season.cloudPct}%</p>` : "<p>—</p>"}
+
+        <h3>4. Shelter Geometry</h3>
+        <p>Shape: ${s.design.shape} · Orientation: ${s.design.orientation}${s.design.orientation==="CUSTOM"?" ("+s.design.azimuthDeg+"° from South)":""} ·
+        Dimensions: ${s.design.length}m × ${s.design.width}m × ${s.design.height}m</p>
+
+        <h3>5–6. Material Specification &amp; Thermal Properties</h3>
+        <table><tr><th>Element</th><th>Material</th><th>Thickness</th><th>U-value (W/m²K)</th></tr>
+          <tr><td>Wall</td><td>${matName(s.design.wall.materialId)} + ${matName(s.design.wall.insulationMaterialId)}</td><td>${s.design.wall.thicknessMm}mm + ${s.design.wall.insulationThicknessMm}mm</td><td>${ENGINE.wallUValue(s.design).toFixed(3)}</td></tr>
+          <tr><td>Roof</td><td>${matName(s.design.roof.materialId)} + ${matName(s.design.roof.insulationMaterialId)}</td><td>${s.design.roof.thicknessMm}mm + ${s.design.roof.insulationThicknessMm}mm</td><td>${ENGINE.roofUValue(s.design).toFixed(3)}</td></tr>
+          <tr><td>Floor</td><td>${matName(s.design.floor.materialId)}</td><td>${s.design.floor.thicknessMm}mm</td><td>${ENGINE.floorUValue(s.design).toFixed(3)}</td></tr>
+          <tr><td>Window</td><td>${matName(s.design.windows[0].glazingMaterialId)}</td><td>—</td><td>${ENGINE.windowUValue(s.design.windows[0]).toFixed(2)}</td></tr>
+          <tr><td>Thermal mass</td><td>${s.design.thermalMass ? matName(s.design.thermalMass.materialId)+" ("+s.design.thermalMass.massKg+" kg)" : "None"}</td><td>—</td><td>—</td></tr>
+        </table>
+
+        <h3>7. Simulation Methodology</h3>
+        <p>Two-node RC (indoor air + thermal mass) hourly energy-balance model. Solar gain via sol-air temperature
+        (opaque surfaces) and SHGC-based transmission (glazing). Time step: ${s.simConfig.timeStepMinutes} min · Period: ${s.simConfig.periodType}.</p>
+
+        <h3>8. Assumptions</h3>
+        <ul>
+          <li>Outside film coefficient fixed at 23 W/m²K, wind-adjusted infiltration.</li>
+          <li>Ground temperature assumed equal to seasonal mean ambient unless overridden.</li>
+          <li>Longwave sky radiation exchange not separately modelled (folded into sol-air simplification).</li>
+          <li>PCM thermal mass modelled via elevated apparent specific heat over its melt band.</li>
+        </ul>
+
+        ${result ? `
+        <h3>9–11. Solar Energy, Heat Transfer &amp; Indoor Temperature Prediction <span class="tag tag-model">Model Prediction</span></h3>
+        <table>
+          <tr><td>Solar heat gain</td><td class="num">${result.daily.solarKwh} kWh/day</td></tr>
+          <tr><td>Wall / roof / floor / opening / ventilation loss</td><td class="num">${result.daily.wallLossKwh} / ${result.daily.roofLossKwh} / ${result.daily.floorLossKwh} / ${result.daily.openingLossKwh} / ${result.daily.ventLossKwh} kWh/day</td></tr>
+          <tr><td>Net energy balance</td><td class="num">${result.daily.netKwh} kWh/day</td></tr>
+          <tr><td>Predicted indoor temperature range</td><td class="num">${result.comfort.minIndoor} – ${result.comfort.maxIndoor} °C</td></tr>
+        </table>
+        <h3>12. Thermal Comfort Analysis</h3>
+        <p>Comfort duration: ${result.comfort.comfortHoursPerDay} h/day (day ${result.comfort.dayComfortPct}%, night ${result.comfort.nightComfortPct}%).
+        Thermal Comfort Score: <b>${result.scores.thermalComfortScore}/100</b>.</p>` : `<p><i>No simulation has been run yet for this report.</i></p>`}
+
+        ${opt ? `
+        <h3>13–15. Candidate Comparison, Optimization Results &amp; Recommended Design</h3>
+        <p>${opt.candidatesEvaluated} candidate configurations evaluated. Recommended: <b>Design ${opt.recommended.label}</b> —
+        ${opt.recommended.params.orient}-facing, ${matName(opt.recommended.design.wall.materialId)} wall,
+        ${opt.recommended.params.insul}mm insulation, ${matName(opt.recommended.params.glz)} glazing at
+        ${Math.round(opt.recommended.params.wpct*100)}% window area. Thermal score ${opt.recommended.score.total.toFixed(0)}/100,
+        estimated cost ₹${opt.recommended.cost.toLocaleString("en-IN")}.</p>
+        <h3>16. Sensitivity Analysis</h3>
+        <p>See Optimization module for the ranked parameter-impact chart on this design.</p>` : `<p><i>No optimization run yet for this report.</i></p>`}
+
+        <h3>17. Limitations</h3>
+        <p>Climate inputs used here are ${s.climateSource ? s.climateSource.label.toLowerCase() : "user-provided"}, not
+        field-measured. The thermal model is a simplified two-node transient RC network — it omits 3D conduction,
+        detailed longwave radiation exchange, and moisture transport. Results are model predictions requiring
+        engineering and field validation before construction decisions.</p>
+
+        <h3>18. Engineering Validation Requirements</h3>
+        <p>Before construction: (1) validate material properties against actual procured specifications: (2) instrument
+        a pilot shelter and compare against the Validation module; (3) have a qualified structural/thermal engineer
+        review the final design.</p>
+      </div>`;
+
+    U.on("#printBtn", "click", () => window.print(), root);
+  };
+
+  UI.renderEvaluator = function (root) {
+    const s = STORE.get();
+    const result = s.lastSimulationResult;
+    const opt = s.lastOptimizationResult;
+
+    root.innerHTML = `
+      <h1>Design Intelligence Summary</h1>
+      <p class="subtitle">A 2–3 minute overview for an evaluator: the problem, the model, and the recommended design.</p>
+
+      <div class="grid grid-3" style="margin-bottom:16px;">
+        <div class="card"><h3>Location</h3><div style="font-size:16px;font-weight:700;">${s.location ? U.esc(s.location.label) : "Not selected"}</div>
+          <div class="hint">${s.location ? `${s.location.annualSolarKwhM2Yr} kWh/m²/yr · ${s.location.avgSunshineHoursDay}h sunshine/day · ${s.location.avgCloudFreeDays} clear days/yr` : ""}</div></div>
+        <div class="card"><h3>Climate Severity (${s.seasonKey || "—"})</h3><div style="font-size:16px;font-weight:700;">${STORE.currentSeason() ? STORE.currentSeason().tMin + "°C to " + STORE.currentSeason().tMax + "°C" : "—"}</div>
+          <div class="hint">High diurnal swing typical of Ladakh's cold high-altitude desert climate</div></div>
+        <div class="card"><h3>Validation Status</h3><div style="font-size:16px;font-weight:700;">${s.validationDatasets.length ? s.validationDatasets.length + " dataset(s) compared" : "Not yet validated"}</div>
+          <div class="hint">Field validation required before deployment</div></div>
+      </div>
+
+      ${result ? `
+      <div class="grid grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <h3>Thermal Comfort Score</h3>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <div id="evalGauge"></div>
+            <div>
+              <div>Solar utilization: <b>${result.scores.solarUtilizationPct}%</b></div>
+              <div>Heat retention: <b>${result.scores.heatRetentionPct}%</b></div>
+              <div>Heat loss: <b>${result.daily.totalLossKwh} kWh/day</b></div>
+              <div>${opt ? `Optimization improvement: <b>+${(opt.recommended.score.total - opt.top[opt.top.length-1].score.total).toFixed(1)} pts</b> vs weakest evaluated candidate` : ""}</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Why This Design?</h3>
+          <ul class="checklist">
+            <li>High solar gain utilization (${result.scores.solarUtilizationPct}%)</li>
+            <li>Reduced night-time heat loss via insulation (U-wall ${result.uValues.wall.toFixed(2)} W/m²K)</li>
+            <li>Improved insulation on wall and roof</li>
+            <li>Optimized opening area for the local solar/heat-loss trade-off</li>
+            <li>${s.design.thermalMass ? "Thermal mass added for night-time heat release" : "Thermal mass not yet configured — see What-If Analysis"}</li>
+            <li>Orientation set to ${s.design.orientation} for solar exposure</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card"><h3>Recommended Shelter</h3>
+        <p>${opt ? `Design ${opt.recommended.label} — ${opt.recommended.params.orient}-facing, ${matName(opt.recommended.design.wall.materialId)} wall
+        with ${opt.recommended.params.insul}mm insulation, ${matName(opt.recommended.params.glz)} glazing, thermal score
+        <b>${opt.recommended.score.total.toFixed(0)}/100</b>.` : "Run Optimization to generate a recommended configuration."}</p>
+      </div>
+      ` : `<div class="card"><p class="subtitle">Run a simulation (and optimization) to populate this summary.</p></div>`}
+    `;
+    if (result) CH.scoreGauge(U.qs("#evalGauge", root), result.scores.thermalComfortScore);
+  };
+
+  UI.renderSettings = function (root) {
+    const s = STORE.get();
+    root.innerHTML = `
+      <h1>Settings</h1>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Mode</h3>
+          <p>Simple Mode hides advanced engineering fields. Advanced Mode exposes full parameter control.
+          Toggle in the sidebar.</p>
+          <h3 style="margin-top:16px;">Units</h3>
+          <ul class="assumption-list">
+            ${Object.entries(CFG.UNITS).map(([k,v]) => `<li>${k}: <b>${v}</b></li>`).join("")}
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Assumptions &amp; Limitations</h3>
+          <ul class="assumption-list">
+            <li>Transient (hourly RC) model, not steady-state.</li>
+            <li>Outside film coefficient: 23 W/m²K, wind-adjusted infiltration.</li>
+            <li>Sky longwave radiation folded into the sol-air simplification (no separate term).</li>
+            <li>Ground temperature defaults to seasonal mean ambient unless overridden.</li>
+            <li>Internal gains constant-per-hour unless an occupancy schedule is supplied.</li>
+            <li>PCM modelled via elevated apparent specific heat over its melt band.</li>
+            <li>Weather is user-provided or a labelled "Demo / illustrative" dataset — never field-measured.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Project</h3>
+        <div class="form-row"><label>Project name</label><input id="projNameInput" value="${U.esc(s.project.name)}"></div>
+        <button class="btn btn-sm" id="saveProjNameBtn">Save name</button>
+        <button class="btn btn-sm" id="resetProjectBtn" style="margin-left:8px;color:var(--bad);">Reset project (clears all data)</button>
+      </div>
+    `;
+    U.on("#saveProjNameBtn", "click", () => { s.project.name = U.qs("#projNameInput", root).value; STORE.save(); window.APP.render(); }, root);
+    U.on("#resetProjectBtn", "click", () => {
+      if (confirm("This clears all simulations, designs, and validation data in this browser session. Continue?")) {
+        STORE.reset(); window.APP.render();
+      }
+    }, root);
+  };
+})();
+</script>
+
+<script>
+/* AreaTherm — router + bootstrap */
+window.APP = (function () {
+  const STORE = window.APP_STORE, ENGINE = window.APP_ENGINE, CFG = window.APP_CONFIG;
+  const viewRoot = () => document.getElementById("viewRoot");
+
+  const ROUTES = {
+    dashboard: window.UI.renderDashboard,
+    location: window.UI.renderLocation,
+    designer: window.UI.renderDesigner,
+    materials: window.UI.renderMaterials,
+    simulation: window.UI.renderSimulation,
+    optimization: window.UI.renderOptimization,
+    whatif: window.UI.renderWhatIf,
+    validation: window.UI.renderValidation,
+    reports: window.UI.renderReport,
+    evaluator: window.UI.renderEvaluator,
+    settings: window.UI.renderSettings
+  };
+
+  function currentRoute() {
+    const hash = location.hash.replace("#/", "");
+    return ROUTES[hash] ? hash : "dashboard";
+  }
+
+  function render() {
+    const route = currentRoute();
+    document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active", a.dataset.route === route));
+    document.getElementById("projectName").textContent = STORE.get().project.name;
+    ROUTES[route](viewRoot());
+    document.body.classList.toggle("mode-advanced", STORE.get().mode === "ADVANCED");
+  }
+
+  function navigate(route) { location.hash = "#/" + route; }
+
+  function toast(msg) {
+    let t = document.getElementById("appToast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "appToast";
+      t.style.cssText = "position:fixed;bottom:20px;right:24px;background:#152233;color:#fff;padding:10px 16px;border-radius:8px;font-size:12.5px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .3s;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = "0"; }, 2600);
+  }
+
+  function showExplain(title, bodyHtml) {
+    document.getElementById("explainTitle").textContent = title;
+    document.getElementById("explainBody").innerHTML = bodyHtml;
+    document.getElementById("explainModal").classList.remove("hidden");
+  }
+
+  function runLadakhDemo() {
+    STORE.loadLadakhDemo("leh", "Winter");
+    const s = STORE.get();
+    s.design = STORE.defaultDesign();
+    STORE.save();
+    const season = STORE.currentSeason();
+    const result = ENGINE.runSimulation(s.design, season, s.simConfig);
+    STORE.recordSimulation(result);
+    const opt = ENGINE.runOptimization(s.design, season, s.simConfig, s.weights);
+    STORE.recordOptimization(opt);
+    navigate("evaluator");
+    toast("Ladakh demo loaded: climate → simulation → optimization complete.");
+  }
+
+  function init() {
+    document.getElementById("brandName").textContent = CFG.APP_NAME;
+
+    window.addEventListener("hashchange", render);
+    document.getElementById("runLadakhDemoBtn").addEventListener("click", runLadakhDemo);
+    document.getElementById("explainClose").addEventListener("click", () => document.getElementById("explainModal").classList.add("hidden"));
+    document.getElementById("explainModal").addEventListener("click", (e) => { if (e.target.id === "explainModal") e.currentTarget.classList.add("hidden"); });
+
+    document.getElementById("modeSimple").addEventListener("click", () => { STORE.get().mode = "SIMPLE"; STORE.save(); document.getElementById("modeSimple").classList.add("active"); document.getElementById("modeAdvanced").classList.remove("active"); render(); });
+    document.getElementById("modeAdvanced").addEventListener("click", () => { STORE.get().mode = "ADVANCED"; STORE.save(); document.getElementById("modeAdvanced").classList.add("active"); document.getElementById("modeSimple").classList.remove("active"); render(); });
+
+    if (STORE.get().mode === "ADVANCED") { document.getElementById("modeAdvanced").click(); }
+
+    if (!location.hash) location.hash = "#/dashboard";
+    render();
+  }
+
+  return { render, navigate, toast, showExplain, runLadakhDemo, init };
+})();
+
+window.APP.init();
+</script>
